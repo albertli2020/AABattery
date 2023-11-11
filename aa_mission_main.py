@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from djitellopy import Tello
+from coloredObjectExtractor import ColoredObjectExtractor
 
 default_command_delay_time = 0.7
 picture_first_frame_delay_time = 4.0
@@ -91,6 +92,30 @@ def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
 
 
 def colorAnalyzeImage(image, show_image=True):
+    _, w, _ = image.shape
+    half = w//2
+    img = image### [half:, :] 
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    colorKeysAreasToDetect = [("red", 150),
+                              ("blue", 150),
+                              ("python_blue", 150),
+                              ("yellow", 150),
+                              ("german_mustard", 150),
+                              ("greenbrier", 150),
+                              ("purple_opulence", 150),
+                              ("ligh_green", 80)]
+   
+    for (colorKey, minArea) in colorKeysAreasToDetect:
+        coe = ColoredObjectExtractor(colorKey)
+        coe.extract(hsv, minArea, img)
+
+    cv2.imwrite("after_image_analysis.jpg", img)
+
+    if show_image:
+        cv2.imshow("color analysis result",img)
+        cv2.waitKey()        
+
+def colorAnalyzeImageOld(image, show_image=True):
     _, w, _ = image.shape
     half = w//2
     img = image### [half:, :] 
@@ -312,14 +337,12 @@ def offlineTask102(tello:Tello) -> int:
     time.sleep(default_command_delay_time)
     
     colorAnalyzeImage(rgb_img, show_image=True)
-    #colorAnalyzeImage(img)
     return 102
 
 
 def offlineTask103() -> int:
     rgb_img = cv2.imread("balloon_seen_stationary2.png")
     colorAnalyzeImage(rgb_img, show_image=True)
-    #colorAnalyzeImage(img)
     return 103
 
 
