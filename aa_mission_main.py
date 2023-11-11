@@ -134,7 +134,14 @@ def colorAnalyzeImage(image, show_image=True):
     upper_gm = np.array([36//2,106*255//100,80*255//100])  
     #30, 99, 74
     #19, 100, 55
+    
+    # Greenbrier color
+    lower_gb = np.array([122//2,40*255//100,50*255//100]) # 132, 50, 60
+    upper_gb = np.array([142//2,60*255//100,70*255//100]) 
 
+    # Purple Opulence color
+    lower_po = np.array([244//2,40*255//100,52*255//100]) # 254, 50, 62
+    upper_po = np.array([264//2,60*255//100,72*255//100]) 
 
     green = cv2.inRange(hsv, lower_green, upper_green)
     blue = cv2.inRange(hsv, lower_blue, upper_blue)
@@ -146,11 +153,13 @@ def colorAnalyzeImage(image, show_image=True):
     by = cv2.inRange(hsv, lower_by, upper_by)
     eg = cv2.inRange(hsv, lower_eg, upper_eg)
     gm = cv2.inRange(hsv, lower_gm, upper_gm)
+    gb = cv2.inRange(hsv, lower_gb, upper_gb)
+    po = cv2.inRange(hsv, lower_po, upper_po)
     red = red + red2
 
-    objs = [red, blue, green, lg, pur, dg, by, eg, gm]
-    obj_color_strs = ['Red', 'Blue', 'Green', 'Light-Green', 'Light-Purple', 'Green Tea Mochi', 'Yellow', 'Evening-Green', 'German-Mustard']
-    obj_cnt_colors = [(0, 0, 255), (255, 0, 0), (64, 108, 57), (0, 100, 0), (198, 171, 213), (142, 171, 105), (6, 195, 216), (121, 120, 53), (3, 123, 214)]
+    objs = [red, blue, green, lg, pur, dg, by, eg, gm, gb, po]
+    obj_color_strs = ['Red', 'Blue', 'Green', 'Light-Green', 'Light-Purple', 'Green Tea Mochi', 'Yellow', 'Evening-Green', 'German-Mustard', 'Greenbrier', 'Purple Opulence']
+    obj_cnt_colors = [(0, 0, 255), (255, 0, 0), (64, 108, 57), (0, 100, 0), (198, 171, 213), (142, 171, 105), (6, 195, 216), (121, 120, 53), (3, 123, 214), (93, 154, 77), (159, 80, 98)]
     
     oi = 0
     for o in objs:
