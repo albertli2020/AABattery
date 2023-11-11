@@ -306,7 +306,7 @@ def offlineTask102(tello:Tello) -> int:
     img = frame_read.frame
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    cv2.imwrite("ballon_seen_stationary.png", rgb_img)
+    cv2.imwrite("balloon_seen_stationary2.png", rgb_img)
    
     tello.streamoff()
     time.sleep(default_command_delay_time)
@@ -317,7 +317,7 @@ def offlineTask102(tello:Tello) -> int:
 
 
 def offlineTask103() -> int:
-    rgb_img = cv2.imread("ballon_seen_stationary.png")
+    rgb_img = cv2.imread("balloon_seen_stationary2.png")
     colorAnalyzeImage(rgb_img, show_image=True)
     #colorAnalyzeImage(img)
     return 103
