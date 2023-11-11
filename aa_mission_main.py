@@ -98,28 +98,18 @@ def colorAnalyzeImage(image, show_image=True):
     #red Color 
     lower_red = np.array([0,90*255//100,60*255//100]) #[0,100,100]
     upper_red = np.array([10,100*255//100,80*255//100]) #[7,255,255]
-    #evening green color 
-    lower_eg = np.array([50//2,42*255//100,46*255//100]) #57, 51, 68; 53, 44, 55; 49, 55, 54
-    upper_eg = np.array([60//2,60*255//100,72*255//100]) # 57, 50, 55; 57, 47, 57; 59, 56, 47;  55, 48, 56; not 47, 54, 51
-
-    #arcala Green 112, 47, 42
-    lower_green = np.array([98//2,32*255//100,38*255//100]) #120, 38, 47; 110, 36, 51
-    upper_green = np.array([122//2,52*255//100,52*255//100]) #100, 34, 50
 
     #blue color 
-    lower_blue = np.array([95,50,50])  # 95, 110, 110 #[90,60,0]
-    upper_blue = np.array([122,255,255]) #[121,255,255]
-    #purple color 
-    lower_purple = np.array([250//2,7*255//100,70*255//100])  #278
-    upper_purple = np.array([310//2,20*255//100,100*255//100]) #[121,255,255]
-
-    #light-green color 
-    lower_lg = np.array([157//2,6*255//100,81*255//100])  
-    upper_lg = np.array([205//2,20*255//100,99*255//100]) 
-
-    #dull-green color 
-    lower_dg = np.array([76//2,32*255//100,58*255//100])  #80, 38, 67; 86, 39, 67;  80, 34, 60
-    upper_dg = np.array([88//2,50*255//100,70*255//100])  #81, 38, 67; 77, 49, 60; 76, 46, 62; 79, 47, 63
+    lower_blue = np.array([201//2,89*255//100,65*255//100]) # 211, 99, 75
+    upper_blue = np.array([221//2,109*255//100,85*255//100]) 
+    
+    # Light Green color
+    lower_lgreen = np.array([61//2,58*255//100,49*255//100]) # 71, 68, 59
+    upper_lgreen = np.array([81//2,78*255//100,69*255//100])
+    
+    #python blue color 
+    lower_pb = np.array([198//2,55*255//100,57*255//100]) # 208, 65, 67
+    upper_pb = np.array([218//2,75*255//100,77*255//100]) 
 
     #bright-yellow color 
     lower_by = np.array([41//2,66*255//100,60*255//100])  #49, 79, 70; 50, 60, 82
@@ -143,23 +133,21 @@ def colorAnalyzeImage(image, show_image=True):
     lower_po = np.array([244//2,40*255//100,52*255//100]) # 254, 50, 62
     upper_po = np.array([264//2,60*255//100,72*255//100]) 
 
-    green = cv2.inRange(hsv, lower_green, upper_green)
+    #green = cv2.inRange(hsv, lower_green, upper_green)
     blue = cv2.inRange(hsv, lower_blue, upper_blue)
+    pb = cv2.inRange(hsv, lower_pb, upper_pb)
     red = cv2.inRange(hsv, lower_red, upper_red)
     red2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    pur = cv2.inRange(hsv, lower_purple, upper_purple)
-    lg = cv2.inRange(hsv, lower_lg, upper_lg)
-    dg = cv2.inRange(hsv, lower_dg, upper_dg)
+    lgreen = cv2.inRange(hsv, lower_lgreen, upper_lgreen)
     by = cv2.inRange(hsv, lower_by, upper_by)
-    eg = cv2.inRange(hsv, lower_eg, upper_eg)
     gm = cv2.inRange(hsv, lower_gm, upper_gm)
     gb = cv2.inRange(hsv, lower_gb, upper_gb)
     po = cv2.inRange(hsv, lower_po, upper_po)
     red = red + red2
 
-    objs = [red, blue, green, lg, pur, dg, by, eg, gm, gb, po]
-    obj_color_strs = ['Red', 'Blue', 'Green', 'Light-Green', 'Light-Purple', 'Green Tea Mochi', 'Yellow', 'Evening-Green', 'German-Mustard', 'Greenbrier', 'Purple Opulence']
-    obj_cnt_colors = [(0, 0, 255), (255, 0, 0), (64, 108, 57), (0, 100, 0), (198, 171, 213), (142, 171, 105), (6, 195, 216), (121, 120, 53), (3, 123, 214), (93, 154, 77), (159, 80, 98)]
+    objs = [red, blue, pb, by, gm, gb, po, lgreen]
+    obj_color_strs = ['Red', 'Blue', 'Python Blue', 'Yellow', 'German-Mustard', 'Greenbrier', 'Purple Opulence', 'Light Green']
+    obj_cnt_colors = [(0, 0, 255), (192, 95, 2), (172, 120, 60), (6, 195, 216), (3, 123, 214), (93, 154, 77), (159, 80, 98), (48, 150, 131)]
     
     oi = 0
     for o in objs:
@@ -179,12 +167,13 @@ def colorAnalyzeImage(image, show_image=True):
                     #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                     #cv2.drawContours(img, [c], -1, obj_cnt_colors[oi], 5)
                     e = cv2.fitEllipse(c)
-                    (_, (h, w), _) = e 
+                    ((x, y), (h, w), _) = e 
                     ea = (3.1415926/4.0)*h*w
                     r = ea/a
                     if r>0.92 and r<1.5:#15: #1.08:
                         if show_image:
                             cv2.ellipse(img, e, obj_cnt_colors[oi], 5)
+                            cv2.putText(img, obj_color_strs[oi], (int(x), int(y)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, obj_cnt_colors[oi], 2, cv2.LINE_AA)
                         print(obj_color_strs[oi], i+1," detected with area =", a, r)
                     else:
                         pass #print(obj_color_strs[oi], i+1," disqualified with area =", a, r)    
