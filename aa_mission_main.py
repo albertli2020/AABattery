@@ -10,16 +10,17 @@ from djitellopy import Tello
 default_command_delay_time = 0.7
 picture_first_frame_delay_time = 4.0
 motion_stage = 0
-flights = [{"name":'Panorama-full-counter-clockwise', "steps":5},
+flights = [{"name":'Panorama-full-counter-clockwise', "steps":9},
     {"name":'Panorama-full-clockwise',  "steps":5},
     {"name":'Panorama-half-counter-clockwise', "steps":4},
-    {"name":'Panorama-half-clockwise', "steps":4}]
-flight_number = 0
+    {"name":'Panorama-half-clockwise', "steps":4},
+    {"name": 'Panorama-move-forward', "steps":6}]
+flight_number = 1
 
 def panorama_full_clockwise(tello:Tello, sync_lock:threading.Lock):
     global motion_stage
-    for i in range(4):
-        tello.rotate_clockwise(80)
+    for i in range(8):
+        tello.rotate_clockwise(40)
         with sync_lock:
             motion_stage += 1
         time.sleep(1)
@@ -74,6 +75,20 @@ def panorama_half_counter_clockwise(tello:Tello, sync_lock:threading.Lock):
     time.sleep(1)
     tello.rotate_clockwise(90)
     time.sleep(1)
+
+def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
+    global motion_stage
+    for i in range(5):
+        with sync_lock:
+            motion_stage += 1
+        time.sleep(1)
+        tello.move_forward(30)
+    
+    with sync_lock:
+        motion_stage += 1
+        
+    time.sleep(1)        
+
 
 def colorAnalyzeImage(image, show_image=True):
     _, w, _ = image.shape
@@ -184,6 +199,8 @@ def motionControl(tello:Tello, sync_lock:threading.Lock) -> int:
         panorama_half_counter_clockwise(tello, sync_lock)
     elif flight_number == 3:
         panorama_half_clockwise(tello, sync_lock)
+    elif flight_number == 4:
+        panorama_move_forward(tello, sync_lock)
     
     #time.sleep(5)
     tello.land()
@@ -203,6 +220,7 @@ def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
     local_ms = 0
     last_lms = 0
     wait_count = 0
+    images = []
     start_time = int(time.time())
     output_folder = os.path.join(f["name"], f'{start_time}')
     if not os.path.exists(output_folder):
@@ -220,12 +238,43 @@ def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
         print("Waited for ", wait_count, "*100ms")
         img = frame_read.frame
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        ir = cv2.rotate(rgb_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        images.append(ir)
+        # cv2.imwrite("stitch_input_2.jpg", img)
         of_path = os.path.join(output_folder, f'{time.time()}.jpg')
         cv2.imwrite(of_path, rgb_img)
     #cv2.imwrite("ballon_seen_stationary.png", rgb_img)
-    tello.streamoff(os.path.join)
+    tello.streamoff()
     time.sleep(default_command_delay_time)
-    colorAnalyzeImage(rgb_img, show_image=False)
+    stitcher = cv2.Stitcher_create()
+
+    (status, stitched_br) = stitcher.stitch(images)
+    if status == 0:
+        stitched = cv2.rotate(stitched_br, cv2.ROTATE_90_CLOCKWISE)
+        cv2.imwrite("stitch_output_wo_contours.jpg", stitched)
+        # convert the resized image to grayscale, blur it slightly,
+        # and threshold it
+        gray = cv2.cvtColor(stitched, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (91, 91), 0)
+        thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+        # find contours in the thresholded image and initialize the
+        # shape detector
+        cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_CCOMP, #cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(stitched, cnts, -1, 255, 3)
+
+        # write the output stitched image to disk
+        cv2.imwrite("stitch_output_with_contours.jpg", stitched)
+        colorAnalyzeImage(stitched, show_image=False)
+        # display the output stitched image to our screen
+    else:
+        # otherwise the stitching failed, likely due to not enough keypoints)
+        # being detected
+        print("[INFO] image stitching failed ({})".format(status))
+
+
+    
+    print("... ended MST.")
 
 def missionTaskBeginner(tello:Tello) -> int:
     global motion_stage, flights, flight_number
