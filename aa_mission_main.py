@@ -93,11 +93,11 @@ def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
 def colorAnalyzeImage(image, show_image=True):
     _, w, _ = image.shape
     half = w//2
-    img = image[half:, :] 
+    img = image### [half:, :] 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     #red Color 
-    lower_red = np.array([0,100,100]) #[0,100,100]
-    upper_red = np.array([10,255,255]) #[7,255,255]
+    lower_red = np.array([0,90*255//100,60*255//100]) #[0,100,100]
+    upper_red = np.array([10,100*255//100,80*255//100]) #[7,255,255]
     #evening green color 
     lower_eg = np.array([50//2,42*255//100,46*255//100]) #57, 51, 68; 53, 44, 55; 49, 55, 54
     upper_eg = np.array([60//2,60*255//100,72*255//100]) # 57, 50, 55; 57, 47, 57; 59, 56, 47;  55, 48, 56; not 47, 54, 51
@@ -123,11 +123,17 @@ def colorAnalyzeImage(image, show_image=True):
 
     #bright-yellow color 
     lower_by = np.array([41//2,66*255//100,60*255//100])  #49, 79, 70; 50, 60, 82
-    upper_by = np.array([58//2,100*255//100,88*255//100])  #56, 90, 66; 55, 97, 62
+    upper_by = np.array([58//2,100*255//100,88*255//100])  #1706, 90, 66; 55, 97, 66
 
     #red2 color 
-    lower_red2 = np.array([160,0,0]) #100, 100
-    upper_red2 = np.array([180,255,255])
+    lower_red2 = np.array([170,90*255//100,60*255//100]) #[0,100,100]
+    upper_red2 = np.array([180,100*255//100,80*255//100]) #[7,255,255]
+
+    #german mustard color 
+    lower_gm = np.array([18//2,92*255//100,52*255//100]) 
+    upper_gm = np.array([36//2,106*255//100,80*255//100])  
+    #30, 99, 74
+    #19, 100, 55
 
 
     green = cv2.inRange(hsv, lower_green, upper_green)
@@ -139,11 +145,12 @@ def colorAnalyzeImage(image, show_image=True):
     dg = cv2.inRange(hsv, lower_dg, upper_dg)
     by = cv2.inRange(hsv, lower_by, upper_by)
     eg = cv2.inRange(hsv, lower_eg, upper_eg)
+    gm = cv2.inRange(hsv, lower_gm, upper_gm)
     red = red + red2
 
-    objs = [red, blue, green, lg, pur, dg, by, eg]
-    obj_color_strs = ['Red', 'Blue', 'Green', 'Light-Green', 'Light-Purple', 'Green Tea Mochi', 'Yellow', 'Evening-Green']
-    obj_cnt_colors = [(0, 0, 255), (255, 0, 0), (64, 108, 57), (0, 100, 0), (198, 171, 213), (142, 171, 105), (208, 183, 65), (121, 120, 53)]
+    objs = [red, blue, green, lg, pur, dg, by, eg, gm]
+    obj_color_strs = ['Red', 'Blue', 'Green', 'Light-Green', 'Light-Purple', 'Green Tea Mochi', 'Yellow', 'Evening-Green', 'German-Mustard']
+    obj_cnt_colors = [(0, 0, 255), (255, 0, 0), (64, 108, 57), (0, 100, 0), (198, 171, 213), (142, 171, 105), (6, 195, 216), (121, 120, 53), (3, 123, 214)]
     
     oi = 0
     for o in objs:
@@ -158,7 +165,7 @@ def colorAnalyzeImage(image, show_image=True):
                 c = cgs[i]
                 #x,y,w,h = cv2.boundingRect(c)
                 a = cv2.contourArea(c)
-                if a >= 400: #1000:#5000:         
+                if a >= 100:#400: #1000:#5000:         
                     # draw the biggest contour (c) in green
                     #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                     #cv2.drawContours(img, [c], -1, obj_cnt_colors[oi], 5)
@@ -213,8 +220,8 @@ def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
     print("Flight no = ", flight_number, f)
     #tello.streamoff()
     #time.sleep(default_command_delay_time)
-    tello.streamon()
-    time.sleep(default_command_delay_time)
+    #tello.streamon()
+    #time.sleep(default_command_delay_time)
     frame_read = tello.get_frame_read()
     time.sleep(picture_first_frame_delay_time)
     local_ms = 0
@@ -290,6 +297,35 @@ def missionTaskBeginner(tello:Tello) -> int:
     
     return 99
 
+def offlineTask102(tello:Tello) -> int:
+    tello.set_video_direction(Tello.CAMERA_DOWNWARD)
+    time.sleep(default_command_delay_time)
+    tello.streamon()
+    time.sleep(default_command_delay_time)
+    frame_read = tello.get_frame_read()
+    time.sleep(picture_first_frame_delay_time/2)
+
+    img = frame_read.frame
+    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    cv2.imwrite("ballon_seen_stationary.png", rgb_img)
+   
+    tello.streamoff()
+    time.sleep(default_command_delay_time)
+    
+    colorAnalyzeImage(rgb_img, show_image=True)
+    #colorAnalyzeImage(img)
+    return 102
+
+
+def offlineTask103() -> int:
+    rgb_img = cv2.imread("ballon_seen_stationary.png")
+    colorAnalyzeImage(rgb_img, show_image=True)
+    #colorAnalyzeImage(img)
+    return 103
+
+
+
 def main(argv):
     tid = int(argv[0])
     print("QST TID:", tid)
@@ -309,10 +345,15 @@ def main(argv):
         #b = 1
         if b < 15:
             print("Battery too low!!! Abort!!!")
-        elif tid == 9:
+            return
+        
+        #tello.streamon()
+        #time.sleep(0.5)
+        if tid == 9:
             offlineTask102(tello)
         elif tid == 99:
             missionTaskBeginner(tello)
+        #tello.streamoff()    
     else:
         if tid == 101:
             offlineTask101()
