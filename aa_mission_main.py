@@ -307,7 +307,7 @@ def missionTaskBeginner(tello:Tello) -> int:
     return 99
 
 def offlineTask102(tello:Tello) -> int:
-    tello.set_video_direction(Tello.CAMERA_DOWNWARD)
+    # tello.set_video_direction(Tello.CAMERA_DOWNWARD)
     time.sleep(default_command_delay_time)
     tello.streamon()
     time.sleep(default_command_delay_time)
