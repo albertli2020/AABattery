@@ -18,7 +18,7 @@ flights = [{"name":'Panorama-full-counter-clockwise', "steps":9},
     {"name":'Panorama-half-counter-clockwise', "steps":4},
     {"name":'Panorama-half-clockwise', "steps":4},
     {"name": 'Panorama-move-forward', "steps":6}]
-flight_number = 3
+flight_number = 4
 
 def panorama_full_clockwise(tello:Tello, sync_lock:threading.Lock):
     global motion_stage
@@ -81,11 +81,11 @@ def panorama_half_counter_clockwise(tello:Tello, sync_lock:threading.Lock):
 
 def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
     global motion_stage
-    for i in range(5):
+    for i in range(4):
         with sync_lock:
             motion_stage += 1
         time.sleep(1)
-        tello.move_forward(30)
+        tello.move_forward(20)
     
     with sync_lock:
         motion_stage += 1
@@ -95,20 +95,20 @@ def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
 numObjectsDetectedForColor = numObjectsDetectedForColor = {
     "red": 0,
     "blue": 0,
-    "python_blue": 0,
+    "light_blue": 0,
     "yellow": 0,
-    "german_mustard": 0,
+    "orange": 0,
     "greenbrier": 0,
     "purple_opulence": 0,
-    "ligh_green": 0 }
+    "light_green": 0 }
 colorKeysAreasToDetect = [("red", 150),
                            ("blue", 150),
-                           ("python_blue", 150),
+                           ("light_blue", 150),
                            ("yellow", 200),
-                           ("german_mustard", 150),
+                           ("orange", 150),
                            ("greenbrier", 150),
                            ("purple_opulence", 150),
-                           ("ligh_green", 80)]
+                           ("light_green", 200)]
 output_folder = ""
 def colorAnalyzeImage(image, show_image=True, saveAnalyzedImage=True):
     global numObjectsDetectedForColor, colorKeysAreasToDetect, output_folder
@@ -244,6 +244,7 @@ def recordAndShowFrames(tello:Tello):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     frame_read = tello.get_frame_read()
+    time.sleep(3)
     #h, w, _ = frame_read.frame.shape
     #v = cv2.VideoWriter('video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 5, (w, h))
     #v = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'XVID'), 5, (w, h))
@@ -262,7 +263,7 @@ def recordAndShowFrames(tello:Tello):
     #a1.bar(vs, colors, color ='maroon', width = 0.4)
     #a1.set(xlabel="Max No. of colored objects", ylabel="Colors", title ="Objects detected per color")
     plt.ion()
-    for fn in range(30):
+    for fn in range(16):
         start_time = time.time()
         img = frame_read.frame
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

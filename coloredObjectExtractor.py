@@ -12,12 +12,12 @@ class ColoredObjectExtractor:
         },
         "blue" : {"name": 'Blue',
           "hsvLow1": [194//2,  89*255//100,  34*255//100], #204, 99, 44
-          "hsvHigh1":[214//2, 109*255//100,  54*255//100],
+          "hsvHigh1":[214//2, 109*255//100,  78*255//100], #201, 99, 75
           "contourBgrColor": (113, 68, 1)
         },
-        "python_blue": {"name": 'Python Blue',
-          "hsvLow1": [198//2,  55*255//100,  57*255//100],
-          "hsvHigh1":[218//2,  75*255//100,  77*255//100],
+        "light_blue": {"name": 'Light Blue',
+          "hsvLow1": [198//2,  48*255//100,  57*255//100],
+          "hsvHigh1":[218//2,  75*255//100,  87*255//100],
           "contourBgrColor": (172, 120, 60)
         },
         "yellow": {"name": 'Yellow',
@@ -25,14 +25,14 @@ class ColoredObjectExtractor:
           "hsvHigh1":[ 58//2, 100*255//100,  88*255//100],
           "contourBgrColor": (6, 195, 216)
         },
-        "german_mustard": {"name": 'Orange',
+        "orange": {"name": 'Orange',
           "hsvLow1": [ 18//2,  92*255//100,  52*255//100], 
           "hsvHigh1":[ 36//2, 106*255//100,  80*255//100],  
           "contourBgrColor": (3, 123, 214)
         },
         "greenbrier": {"name": 'Greenbrier',
-          "hsvLow1": [122//2,  40*255//100,  50*255//100],
-          "hsvHigh1":[142//2,  60*255//100,  70*255//100],
+          "hsvLow1": [120//2,  35*255//100,  45*255//100],
+          "hsvHigh1":[144//2,  65*255//100,  75*255//100],
           "contourBgrColor": (93, 154, 77)
         },
         "purple_opulence": {"name": 'Purple Opulence',
@@ -40,9 +40,9 @@ class ColoredObjectExtractor:
           "hsvHigh1":[264//2,  60*255//100,  72*255//100],
           "contourBgrColor": (159, 80, 98)
         },
-        "ligh_green": {"name": 'Light Green',
-          "hsvLow1": [ 61//2,  58*255//100,  49*255//100],
-          "hsvHigh1":[ 81//2,  78*255//100,  69*255//100],
+        "light_green": {"name": 'Light Green',
+          "hsvLow1": [ 55//2,  40*255//100,  40*255//100], #86, 47, 76
+          "hsvHigh1":[ 90//2,  80*255//100,  90*255//100],
           "contourBgrColor": (48, 150, 131)
         } }
     
