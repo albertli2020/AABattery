@@ -97,3 +97,5 @@ class ColoredObjectExtractor:
                                         cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, self.contourBgrColor, 2, cv2.LINE_AA)
                         print(self.colorName, num_detected_Objects," detected with area =", a, r)
                         returnedObjects.append(((x,y),(h,w), a, r))
+        return returnedObjects
+          

@@ -4,19 +4,21 @@ import threading
 import time
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from djitellopy import Tello
 from coloredObjectExtractor import ColoredObjectExtractor
 
-default_command_delay_time = 0.7
+default_command_delay_time = 0.1 #7
 picture_first_frame_delay_time = 4.0
 motion_stage = 0
+
 flights = [{"name":'Panorama-full-counter-clockwise', "steps":9},
     {"name":'Panorama-full-clockwise',  "steps":5},
     {"name":'Panorama-half-counter-clockwise', "steps":4},
     {"name":'Panorama-half-clockwise', "steps":4},
     {"name": 'Panorama-move-forward', "steps":6}]
-flight_number = 1
+flight_number = 3
 
 def panorama_full_clockwise(tello:Tello, sync_lock:threading.Lock):
     global motion_stage
@@ -90,124 +92,51 @@ def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
         
     time.sleep(1)        
 
+numObjectsDetectedForColor = numObjectsDetectedForColor = {
+    "red": 0,
+    "blue": 0,
+    "python_blue": 0,
+    "yellow": 0,
+    "german_mustard": 0,
+    "greenbrier": 0,
+    "purple_opulence": 0,
+    "ligh_green": 0 }
+colorKeysAreasToDetect = [("red", 150),
+                           ("blue", 150),
+                           ("python_blue", 150),
+                           ("yellow", 200),
+                           ("german_mustard", 150),
+                           ("greenbrier", 150),
+                           ("purple_opulence", 150),
+                           ("ligh_green", 80)]
 
-def colorAnalyzeImage(image, show_image=True):
+def colorAnalyzeImage(image, show_image=True, saveAnalyzedImage=True):
+    global numObjectsDetectedForColor, colorKeysAreasToDetect
     _, w, _ = image.shape
     half = w//2
     img = image### [half:, :] 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    colorKeysAreasToDetect = [("red", 150),
-                              ("blue", 150),
-                              ("python_blue", 150),
-                              ("yellow", 150),
-                              ("german_mustard", 150),
-                              ("greenbrier", 150),
-                              ("purple_opulence", 150),
-                              ("ligh_green", 80)]
-   
+    #hsv[:, :, 0] = hsv[:, :, 0] * 1.05
+    #hsv[:, :, 1] = hsv[:, :, 1] * .95
+    #hsv[:, :, 2] = hsv[:, :, 2] * .95
+    img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR) 
+
     for (colorKey, minArea) in colorKeysAreasToDetect:
         coe = ColoredObjectExtractor(colorKey)
-        coe.extract(hsv, minArea, img)
+        objs = coe.extract(hsv, minArea, img)
+        n = numObjectsDetectedForColor[colorKey]
+        nn = len(objs)
+        if n < nn:
+            numObjectsDetectedForColor[colorKey] = nn
 
-    cv2.imwrite("after_image_analysis.jpg", img)
-
-    if show_image:
-        cv2.imshow("color analysis result",img)
-        cv2.waitKey()        
-
-def colorAnalyzeImageOld(image, show_image=True):
-    _, w, _ = image.shape
-    half = w//2
-    img = image### [half:, :] 
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    #red Color 
-    lower_red = np.array([0,90*255//100,60*255//100]) #[0,100,100]
-    upper_red = np.array([10,100*255//100,80*255//100]) #[7,255,255]
-
-    #blue color 
-    lower_blue = np.array([201//2,89*255//100,65*255//100]) # 211, 99, 75
-    upper_blue = np.array([221//2,109*255//100,85*255//100]) 
-    
-    # Light Green color
-    lower_lgreen = np.array([61//2,58*255//100,49*255//100]) # 71, 68, 59
-    upper_lgreen = np.array([81//2,78*255//100,69*255//100])
-    
-    #python blue color 
-    lower_pb = np.array([198//2,55*255//100,57*255//100]) # 208, 65, 67
-    upper_pb = np.array([218//2,75*255//100,77*255//100]) 
-
-    #bright-yellow color 
-    lower_by = np.array([41//2,66*255//100,60*255//100])  #49, 79, 70; 50, 60, 82
-    upper_by = np.array([58//2,100*255//100,88*255//100])  #1706, 90, 66; 55, 97, 66
-
-    #red2 color 
-    lower_red2 = np.array([170,90*255//100,60*255//100]) #[0,100,100]
-    upper_red2 = np.array([180,100*255//100,80*255//100]) #[7,255,255]
-
-    #german mustard color 
-    lower_gm = np.array([18//2,92*255//100,52*255//100]) 
-    upper_gm = np.array([36//2,106*255//100,80*255//100])  
-    #30, 99, 74
-    #19, 100, 55
-    
-    # Greenbrier color
-    lower_gb = np.array([122//2,40*255//100,50*255//100]) # 132, 50, 60
-    upper_gb = np.array([142//2,60*255//100,70*255//100]) 
-
-    # Purple Opulence color
-    lower_po = np.array([244//2,40*255//100,52*255//100]) # 254, 50, 62
-    upper_po = np.array([264//2,60*255//100,72*255//100]) 
-
-    #green = cv2.inRange(hsv, lower_green, upper_green)
-    blue = cv2.inRange(hsv, lower_blue, upper_blue)
-    pb = cv2.inRange(hsv, lower_pb, upper_pb)
-    red = cv2.inRange(hsv, lower_red, upper_red)
-    red2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    lgreen = cv2.inRange(hsv, lower_lgreen, upper_lgreen)
-    by = cv2.inRange(hsv, lower_by, upper_by)
-    gm = cv2.inRange(hsv, lower_gm, upper_gm)
-    gb = cv2.inRange(hsv, lower_gb, upper_gb)
-    po = cv2.inRange(hsv, lower_po, upper_po)
-    red = red + red2
-
-    objs = [red, blue, pb, by, gm, gb, po, lgreen]
-    obj_color_strs = ['Red', 'Blue', 'Python Blue', 'Yellow', 'German-Mustard', 'Greenbrier', 'Purple Opulence', 'Light Green']
-    obj_cnt_colors = [(0, 0, 255), (192, 95, 2), (172, 120, 60), (6, 195, 216), (3, 123, 214), (93, 154, 77), (159, 80, 98), (48, 150, 131)]
-    
-    oi = 0
-    for o in objs:
-        cnts, hierarchy = cv2.findContours(o, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        count = len(cnts)
-        if count > 0:
-            # find the biggest countour (c) by the area
-            cgs = sorted(cnts, key=cv2.contourArea, reverse=True)
-            if count > 6:
-                count = 6
-            for i in range(count):
-                c = cgs[i]
-                #x,y,w,h = cv2.boundingRect(c)
-                a = cv2.contourArea(c)
-                if a >= 100:#400: #1000:#5000:         
-                    # draw the biggest contour (c) in green
-                    #cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-                    #cv2.drawContours(img, [c], -1, obj_cnt_colors[oi], 5)
-                    e = cv2.fitEllipse(c)
-                    ((x, y), (h, w), _) = e 
-                    ea = (3.1415926/4.0)*h*w
-                    r = ea/a
-                    if r>0.92 and r<1.5:#15: #1.08:
-                        if show_image:
-                            cv2.ellipse(img, e, obj_cnt_colors[oi], 5)
-                            cv2.putText(img, obj_color_strs[oi], (int(x), int(y)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, obj_cnt_colors[oi], 2, cv2.LINE_AA)
-                        print(obj_color_strs[oi], i+1," detected with area =", a, r)
-                    else:
-                        pass #print(obj_color_strs[oi], i+1," disqualified with area =", a, r)    
-        oi += 1            
-    cv2.imwrite("after_image_analysis.jpg", img)
+    if saveAnalyzedImage:
+        cv2.imwrite("after_image_analysis.jpg", img)
 
     if show_image:
         cv2.imshow("color analysis result",img)
-        cv2.waitKey()        
+        cv2.waitKey()
+    
+    return img
 
 def motionControl(tello:Tello, sync_lock:threading.Lock) -> int:
     global motion_stage, flight_number
@@ -306,46 +235,109 @@ def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
     
     print("... ended MST.")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+def recordAndShowFrames(tello:Tello):
+    global numObjectsDetectedForColor
+    frame_read = tello.get_frame_read()
+    #h, w, _ = frame_read.frame.shape
+    #v = cv2.VideoWriter('video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 5, (w, h))
+    #v = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'XVID'), 5, (w, h))
+    #create two subplots
+    img = frame_read.frame
+    rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    #fig, ax = plt.subplots()
+    #f, (a0, a1) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [3, 1]})
+    plt.figure(figsize=(12, 9))
+    #a0.axis("off")
+    #a0.set(title="Waiting for streaming to start...")
+    #colors = list(numObjectsDetectedForColor.keys())
+    #vs = list(numObjectsDetectedForColor.values())
+    #create two image plots
+    plt.imshow(rgb_after)
+    #a1.bar(vs, colors, color ='maroon', width = 0.4)
+    #a1.set(xlabel="Max No. of colored objects", ylabel="Colors", title ="Objects detected per color")
+    plt.ion()
+    for fn in range(24):
+        start_time = time.time()
+        img = frame_read.frame
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #rgb_before = rgb_img.copy()
+        #v.write(rgb_img)
+        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImage=False)
+        rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb_after)
+    
+        #b = tello.get_battery()
+        #plt.title(f'Frame Number: {fn+1}, battery level: {b}')
+        plt.title(f'Frame Number: {fn+1}')
+        #print("Battery level: ", b)
+        delta_time = (1/5.0) - (time.time()-start_time)
+        if delta_time > 0:
+            plt.pause(delta_time)
+
+    tello.streamoff()
+    time.sleep(default_command_delay_time)
+
+    plt.ioff() # due to infinite loop, this gets never called.
+    plt.show()
+
+    plt.figure(figsize=(12, 9))
+    colors = list(numObjectsDetectedForColor.keys())
+    vs = list(numObjectsDetectedForColor.values())
+    plt.barh(colors, vs, color ='maroon', height = 0.4)
+    plt.xlabel("Max No. of colored objects")
+    plt.ylabel("Colors")
+    plt.title("Objects detected per color")
+    plt.show()
+        
+    #v.release()
+
+def stationaryTask9(tello:Tello) -> int:
+    
+    
+    
+    
+    # tello.set_video_direction(Tello.CAMERA_DOWNWARD)
+    recordAndShowFrames(tello)
+    return 9
+
 def missionTaskBeginner(tello:Tello) -> int:
     global motion_stage, flights, flight_number
     sync_lock = threading.Lock()
     motion_stage = 0
-    t1 = threading.Thread(target = perceiveObjects, args=(tello, sync_lock,))
+    #t1 = threading.Thread(target = perceiveObjects, args=(tello, sync_lock,))
     t2 = threading.Thread(target = motionControl, args=(tello, sync_lock,))
 
-    t1.start()
+    tello.streamoff()
+    time.sleep(default_command_delay_time)
+        
+    tello.streamon()
+    time.sleep(default_command_delay_time)
+    #t1.start()
     t2.start()
-    t1.join()
+    #t1.join()
+    stationaryTask9(tello)
     t2.join()
     
     return 99
-
-def offlineTask102(tello:Tello) -> int:
-    # tello.set_video_direction(Tello.CAMERA_DOWNWARD)
-    time.sleep(default_command_delay_time)
-    tello.streamon()
-    time.sleep(default_command_delay_time)
-    frame_read = tello.get_frame_read()
-    time.sleep(picture_first_frame_delay_time/2)
-
-    img = frame_read.frame
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    cv2.imwrite("balloon_seen_stationary2.png", rgb_img)
-   
-    tello.streamoff()
-    time.sleep(default_command_delay_time)
-    
-    colorAnalyzeImage(rgb_img, show_image=True)
-    return 102
 
 
 def offlineTask103() -> int:
     rgb_img = cv2.imread("balloon_seen_stationary2.png")
     colorAnalyzeImage(rgb_img, show_image=True)
     return 103
-
-
 
 def main(argv):
     tid = int(argv[0])
@@ -371,17 +363,17 @@ def main(argv):
         #tello.streamon()
         #time.sleep(0.5)
         if tid == 9:
-            offlineTask102(tello)
+            stationaryTask9(tello)
         elif tid == 99:
             missionTaskBeginner(tello)
         #tello.streamoff()    
     else:
         if tid == 101:
-            offlineTask101()
+            pass #offlineTask101()
         elif tid == 103:
             offlineTask103()
         elif tid == 104:
-            offlineTask104()    
+            pass #offlineTask104()    
 
 if __name__ == "__main__":
    main(sys.argv[1:])
