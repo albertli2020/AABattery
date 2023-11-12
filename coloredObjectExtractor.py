@@ -11,9 +11,9 @@ class ColoredObjectExtractor:
           "contourBgrColor": (0, 0, 255)
         },
         "blue" : {"name": 'Blue',
-          "hsvLow1": [201//2,  89*255//100,  65*255//100],
-          "hsvHigh1":[221//2, 109*255//100,  85*255//100],
-          "contourBgrColor": (192, 95, 2)
+          "hsvLow1": [194//2,  89*255//100,  34*255//100], #204, 99, 44
+          "hsvHigh1":[214//2, 109*255//100,  54*255//100],
+          "contourBgrColor": (113, 68, 1)
         },
         "python_blue": {"name": 'Python Blue',
           "hsvLow1": [198//2,  55*255//100,  57*255//100],
