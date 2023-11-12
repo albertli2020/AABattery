@@ -97,7 +97,7 @@ numObjectsDetectedForColor = numObjectsDetectedForColor = {
     "blue": 0,
     "python_blue": 0,
     "yellow": 0,
-    "german_mustard": 0,
+    "orange": 0,
     "greenbrier": 0,
     "purple_opulence": 0,
     "ligh_green": 0 }
@@ -105,7 +105,7 @@ colorKeysAreasToDetect = [("red", 150),
                            ("blue", 150),
                            ("python_blue", 150),
                            ("yellow", 200),
-                           ("german_mustard", 150),
+                           ("orange", 150),
                            ("greenbrier", 150),
                            ("purple_opulence", 150),
                            ("ligh_green", 80)]

@@ -25,7 +25,7 @@ class ColoredObjectExtractor:
           "hsvHigh1":[ 58//2, 100*255//100,  88*255//100],
           "contourBgrColor": (6, 195, 216)
         },
-        "german_mustard": {"name": 'Orange',
+        "orange": {"name": 'Orange',
           "hsvLow1": [ 18//2,  92*255//100,  52*255//100], 
           "hsvHigh1":[ 36//2, 106*255//100,  80*255//100],  
           "contourBgrColor": (3, 123, 214)
