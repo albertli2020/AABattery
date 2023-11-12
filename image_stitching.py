@@ -34,7 +34,7 @@ stitcher.setPanoConfidenceThresh(0.0)
 # stitching
 if status == 0:
     # check to see if we supposed to crop out the largest rectangular
-    # region from the stitched image
+
     if False:
         # create a 10 pixel border surrounding the stitched image
         print("[INFO] cropping...")
