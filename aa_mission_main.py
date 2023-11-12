@@ -109,9 +109,9 @@ colorKeysAreasToDetect = [("red", 150),
                            ("greenbrier", 150),
                            ("purple_opulence", 150),
                            ("ligh_green", 80)]
-
+output_folder = ""
 def colorAnalyzeImage(image, show_image=True, saveAnalyzedImage=True):
-    global numObjectsDetectedForColor, colorKeysAreasToDetect
+    global numObjectsDetectedForColor, colorKeysAreasToDetect, output_folder
     _, w, _ = image.shape
     half = w//2
     img = image### [half:, :] 
@@ -130,7 +130,8 @@ def colorAnalyzeImage(image, show_image=True, saveAnalyzedImage=True):
             numObjectsDetectedForColor[colorKey] = nn
 
     if saveAnalyzedImage:
-        cv2.imwrite("after_image_analysis.jpg", img)
+        of_path = os.path.join(output_folder, f'aa_{time.time()}.jpg')
+        cv2.imwrite(of_path, img)
 
     if show_image:
         cv2.imshow("color analysis result",img)
@@ -235,21 +236,13 @@ def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
     
     print("... ended MST.")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 def recordAndShowFrames(tello:Tello):
-    global numObjectsDetectedForColor
+    global numObjectsDetectedForColor, output_folder
+    f = flights[flight_number]
+    start_time = int(time.time())
+    output_folder = os.path.join(f["name"], f'{start_time}')
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
     frame_read = tello.get_frame_read()
     #h, w, _ = frame_read.frame.shape
     #v = cv2.VideoWriter('video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 5, (w, h))
@@ -269,13 +262,13 @@ def recordAndShowFrames(tello:Tello):
     #a1.bar(vs, colors, color ='maroon', width = 0.4)
     #a1.set(xlabel="Max No. of colored objects", ylabel="Colors", title ="Objects detected per color")
     plt.ion()
-    for fn in range(24):
+    for fn in range(30):
         start_time = time.time()
         img = frame_read.frame
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         #rgb_before = rgb_img.copy()
         #v.write(rgb_img)
-        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImage=False)
+        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImage=True)
         rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         plt.imshow(rgb_after)
     
