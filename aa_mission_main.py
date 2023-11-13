@@ -5,241 +5,142 @@ import time
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from queue import Queue
 
 from djitellopy import Tello
 from coloredObjectExtractor import ColoredObjectExtractor
 
 default_command_delay_time = 0.1 #7
 picture_first_frame_delay_time = 4.0
-motion_stage = 0
 
-flights = [{"name":'Panorama-full-counter-clockwise', "steps":9},
-    {"name":'Panorama-full-clockwise',  "steps":5},
-    {"name":'Panorama-half-counter-clockwise', "steps":4},
-    {"name":'Panorama-half-clockwise', "steps":4},
-    {"name": 'Panorama-move-forward', "steps":6}]
-flight_number = 4
+flights = [
+    # 0
+    {'name':'Offline', 'requiresDrone':False},
+    # 1
+    {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
+        {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
+    # 2    
+    {'name':'Back-Forward-Back', 'requiresDrone':True, 'flight_segments':[
+        {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'back 20', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+        {'action':'forward 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':5,'durationLimit': 8},
+        {'action':'back 60', 'frameGrabDelay': -1, 'durationLimit': 8}, 
+        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
+    # 3
+   {'name':'Panorama-full-counter-clockwise', 'requiresDrone':True, 'flight_segments':[
+       {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
+       {'action':'ccw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 40', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
+    # 4
+   {'name':'Panorama-full-clockwise', 'requiresDrone':True, 'flight_segments':[
+       {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 10},
+       {'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 40', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },       
+    # 5
+   {'name':'Panorama-half-counter-clockwise', 'requiresDrone':True, 'flight_segments':[
+       {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 10},
+       {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
+       {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
+       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
+     #6  
+    {'name':'Panorama-half-clockwise', 'requiresDrone':True, 'flight_segments':[
+       {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 10},
+       {'action':'ccw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
+       {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+       {'action':'ccw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
+       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
+flight_number = 5
 
-def panorama_full_clockwise(tello:Tello, sync_lock:threading.Lock):
-    global motion_stage
-    for i in range(8):
-        tello.rotate_clockwise(40)
-        with sync_lock:
-            motion_stage += 1
-        time.sleep(1)
+colorKeyedObjectsDetectionConfigAndData = {
+    'red': {'count': 0, 'min_area':150},
+    'blue': {'count': 0, 'min_area':150},
+    'light_blue': {'count': 0, 'min_area':150},
+    'yellow': {'count': 0, 'min_area':200},
+    'orange': {'count': 0, 'min_area':150},
+    'green': {'count': 0, 'min_area':150},
+    'purple': {'count': 0, 'min_area':150},
+    'light_green': {'count': 0, 'min_area':200} }
 
-    tello.rotate_clockwise(40)
-    with sync_lock:
-        motion_stage += 1
-    time.sleep(1)
-
-def panorama_half_clockwise(tello:Tello, sync_lock:threading.Lock):
-    global motion_stage
-    tello.rotate_counter_clockwise(90)
-    for i in range(3):
-        with sync_lock:
-            motion_stage += 1
-        time.sleep(1)
-        tello.rotate_clockwise(60)
-
-    with sync_lock:
-        motion_stage += 1
-    time.sleep(1)
-    tello.rotate_counter_clockwise(90)
-    time.sleep(1)
-
-
-def panorama_full_counter_clockwise(tello:Tello, sync_lock:threading.Lock):
-    global motion_stage
-    for i in range(4):
-        tello.rotate_counter_clockwise(80)
-        with sync_lock:
-            motion_stage += 1
-        time.sleep(1)
-
-    tello.rotate_counter_clockwise(40)
-    with sync_lock:
-        motion_stage += 1
-    time.sleep(1)
-    
-
-def panorama_half_counter_clockwise(tello:Tello, sync_lock:threading.Lock):
-    global motion_stage
-    tello.rotate_clockwise(90)
-
-    for i in range(3):
-        with sync_lock:
-            motion_stage += 1
-        time.sleep(1)
-        tello.rotate_counter_clockwise(60)
-
-    with sync_lock:
-        motion_stage += 1
-    time.sleep(1)
-    tello.rotate_clockwise(90)
-    time.sleep(1)
-
-def panorama_move_forward(tello:Tello, sync_lock:threading.Lock):
-    global motion_stage
-    for i in range(4):
-        with sync_lock:
-            motion_stage += 1
-        time.sleep(1)
-        tello.move_forward(20)
-    
-    with sync_lock:
-        motion_stage += 1
-        
-    time.sleep(1)        
-
-numObjectsDetectedForColor = numObjectsDetectedForColor = {
-    "red": 0,
-    "blue": 0,
-    "light_blue": 0,
-    "yellow": 0,
-    "orange": 0,
-    "greenbrier": 0,
-    "purple_opulence": 0,
-    "light_green": 0 }
-colorKeysAreasToDetect = [("red", 150),
-                           ("blue", 150),
-                           ("light_blue", 150),
-                           ("yellow", 200),
-                           ("orange", 150),
-                           ("greenbrier", 150),
-                           ("purple_opulence", 150),
-                           ("light_green", 200)]
-output_folder = ""
-def colorAnalyzeImage(image, show_image=True, saveAnalyzedImage=True):
-    global numObjectsDetectedForColor, colorKeysAreasToDetect, output_folder
-    _, w, _ = image.shape
-    half = w//2
-    img = image### [half:, :] 
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None):
+    global colorKeyedObjectsDetectionConfigAndData
+    if saveInputImageToFolder is None:
+        pass
+    else:
+        of_path = os.path.join(saveInputImageToFolder, f'ba_{time.time()}.jpg')
+        cv2.imwrite(of_path, image)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     #hsv[:, :, 0] = hsv[:, :, 0] * 1.05
     #hsv[:, :, 1] = hsv[:, :, 1] * .95
     #hsv[:, :, 2] = hsv[:, :, 2] * .95
-    img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR) 
+    #image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR) 
 
-    for (colorKey, minArea) in colorKeysAreasToDetect:
+    for colorKey in colorKeyedObjectsDetectionConfigAndData.keys():
+        cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
         coe = ColoredObjectExtractor(colorKey)
-        objs = coe.extract(hsv, minArea, img)
-        n = numObjectsDetectedForColor[colorKey]
-        nn = len(objs)
-        if n < nn:
-            numObjectsDetectedForColor[colorKey] = nn
+        minArea = cad['min_area']
+        objs = coe.extract(hsv, minArea, image)
+        n = cad['count']
+        nThisFrame = len(objs)
+        if n < nThisFrame:
+            cad['count'] = nThisFrame
 
-    if saveAnalyzedImage:
-        of_path = os.path.join(output_folder, f'aa_{time.time()}.jpg')
-        cv2.imwrite(of_path, img)
+    if saveAnalyzedImageToFolder is None:
+        pass
+    else:
+        of_path = os.path.join(saveAnalyzedImageToFolder, f'aa_{time.time()}.jpg')
+        cv2.imwrite(of_path, image)
 
     if show_image:
-        cv2.imshow("color analysis result",img)
+        cv2.imshow("color analysis result",image)
         cv2.waitKey()
     
-    return img
+    return image
 
-def motionControl(tello:Tello, sync_lock:threading.Lock) -> int:
-    global motion_stage, flight_number
+def motionControl(tello:Tello, fn:int) -> int:
     # take a command from command queue and send to drone
     tello.takeoff()
-    time.sleep(default_command_delay_time)
+    #time.sleep(default_command_delay_time)
     
     tello.move_up(20)
-    time.sleep(default_command_delay_time)
+    #time.sleep(default_command_delay_time)
     h = tello.get_height()
-    time.sleep(default_command_delay_time)
+    #time.sleep(default_command_delay_time)
     print("Hovering at height: ", h, "cm.")
 
-    if flight_number == 0:
-        panorama_full_counter_clockwise(tello, sync_lock)
-    elif flight_number == 1:
-        panorama_full_clockwise(tello, sync_lock)
-    elif flight_number == 2:
-        panorama_half_counter_clockwise(tello, sync_lock)
-    elif flight_number == 3:
-        panorama_half_clockwise(tello, sync_lock)
-    elif flight_number == 4:
-        panorama_move_forward(tello, sync_lock)
+    if fn == 0:
+        panorama_full_counter_clockwise(tello)
+    elif fn == 1:
+        panorama_full_clockwise(tello)
+    elif fn == 2:
+        panorama_half_counter_clockwise(tello)
+    elif fn == 3:
+        panorama_half_clockwise(tello)
+    elif fn == 4:
+        panorama_move_forward(tello)
     
     #time.sleep(5)
     tello.land()
-    time.sleep(default_command_delay_time)
+    #time.sleep(default_command_delay_time)
     return 0
 
-def perceiveObjects(tello:Tello, sync_lock:threading.Lock) -> int:
-    global motion_stage
-    f = flights[flight_number]
-    print("Flight no = ", flight_number, f)
-    #tello.streamoff()
-    #time.sleep(default_command_delay_time)
-    #tello.streamon()
-    #time.sleep(default_command_delay_time)
-    frame_read = tello.get_frame_read()
-    time.sleep(picture_first_frame_delay_time)
-    local_ms = 0
-    last_lms = 0
-    wait_count = 0
-    images = []
-    start_time = int(time.time())
-    output_folder = os.path.join(f["name"], f'{start_time}')
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    for s in range(f["steps"]):
-        while True:
-            with sync_lock:
-                local_ms = motion_stage
-            if local_ms>last_lms:
-                last_lms = local_ms
-                break
-            else:
-                wait_count += 1
-                time.sleep(0.1) 
-        print("Waited for ", wait_count, "*100ms")
-        img = frame_read.frame
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ir = cv2.rotate(rgb_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        images.append(ir)
-        # cv2.imwrite("stitch_input_2.jpg", img)
-        of_path = os.path.join(output_folder, f'{time.time()}.jpg')
-        cv2.imwrite(of_path, rgb_img)
-    #cv2.imwrite("ballon_seen_stationary.png", rgb_img)
-    tello.streamoff()
-    time.sleep(default_command_delay_time)
-    stitcher = cv2.Stitcher_create()
-
-    (status, stitched_br) = stitcher.stitch(images)
-    if status == 0:
-        stitched = cv2.rotate(stitched_br, cv2.ROTATE_90_CLOCKWISE)
-        cv2.imwrite("stitch_output_wo_contours.jpg", stitched)
-        # convert the resized image to grayscale, blur it slightly,
-        # and threshold it
-        gray = cv2.cvtColor(stitched, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (91, 91), 0)
-        thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
-        # find contours in the thresholded image and initialize the
-        # shape detector
-        cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_CCOMP, #cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(stitched, cnts, -1, 255, 3)
-
-        # write the output stitched image to disk
-        cv2.imwrite("stitch_output_with_contours.jpg", stitched)
-        colorAnalyzeImage(stitched, show_image=False)
-        # display the output stitched image to our screen
-    else:
-        # otherwise the stitching failed, likely due to not enough keypoints)
-        # being detected
-        print("[INFO] image stitching failed ({})".format(status))
-
-
-    
-    print("... ended MST.")
-
 def recordAndShowFrames(tello:Tello):
-    global numObjectsDetectedForColor, output_folder
+    global numObjectsDetectedForColor
     f = flights[flight_number]
     start_time = int(time.time())
+    output_folder = os.path.join("../output/processed", f["name"])
     output_folder = os.path.join(f["name"], f'{start_time}')
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -269,7 +170,7 @@ def recordAndShowFrames(tello:Tello):
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         #rgb_before = rgb_img.copy()
         #v.write(rgb_img)
-        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImage=True)
+        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImageToFolder=output_folder)
         rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         plt.imshow(rgb_after)
     
@@ -295,38 +196,161 @@ def recordAndShowFrames(tello:Tello):
     plt.ylabel("Colors")
     plt.title("Objects detected per color")
     plt.show()
-        
-    #v.release()
 
-def stationaryTask9(tello:Tello) -> int:
-    
-    
-    
-    
+
+
+def acquireImageFrames(imageBuffer:Queue, flightNumber:int):
+    global flights
+    print("Running image frame aquirer...")
+    if flights[flightNumber]['requiresDrone']:
+        # When connecting the drone to a home/office AP, we would need to find
+        # the drone's DHCP assigned IP address and provide it as the host argument.
+        # tello = Tello(host='192.168.50.170', retry_count=0)
+        tello = Tello(retry_count=1)
+        tello.connect() # this is a synchronous/blocking call, no need to wait after this call before sending next command
+        responses = tello.get_own_udp_object()['responses'] #no need to wait because this API isn't tied to talking to the drone
+        b = tello.get_battery() # this is getting an asynchronously updated drone state; no need to wait after this call
+        print("Battery level: ", b)
+        #tello.emergency()
+        #b = 1
+        if b < 15:
+            print("Battery too low!!! Abort!!!")
+            imageBuffer.put(None)
+            print("Aborted image frame aquirer.")
+            return
+        tello.streamon() # this is a synchronous/blocking call, no need to wait after this call before sending next command
+        frame_reader = tello.get_frame_read()
+        #Tello class hard-code a background frame "receiver" at:
+        #        self.frame = np.zeros([300, 400, 3], dtype=np.uint8)
+        segments = flights[flightNumber]['flight_segments']
+        abortFlight = False        
+        for s in segments:
+            if 'action' in s.keys():
+                hasAirAction = True
+                tello.send_command_without_return(s['action'])
+            else:
+                hasAirAction = False
+
+            segmentStartTime = time.time()
+            frameGrabDelay = s['frameGrabDelay']
+            duration = s['durationLimit']
+            grabFrameAtSegmentEnd = False
+            if frameGrabDelay == -1:
+                # we are not grabing frames while completing this flight action
+               pass
+            else:
+                if frameGrabDelay > duration:
+                    # just grab a frame after this flight segment ends.
+                     grabFrameAtSegmentEnd = True
+                else:
+                    frameGrabInterval = s['frameGrabInterval']
+                    totalNumIntervals = s['numFrameGrabIntervals']
+                    for ni in range(totalNumIntervals):
+                        intervalStartTime = time.time()
+                        if frameGrabDelay == 0:
+                            # we are grabing a frame immediatly after sending the action command
+                            # wait a 100ms to make sure at least a couple of frame intervals have
+                            # passed from the time the drone receives the command.
+                            frameGrabDelay = 0.1
+                        time.sleep(frameGrabDelay)
+                        img = frame_reader.frame
+                        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        imageBuffer.put(rgb_img)
+                        delta_time = frameGrabInterval - (time.time() - intervalStartTime)
+                        if delta_time > 0.01:
+                            time.sleep(delta_time)
+            if hasAirAction:
+                while not responses:
+                    delta_time = time.time() - segmentStartTime
+                    if  delta_time > duration:
+                        print("Aborting command '{}'. Did not receive a response after {} seconds".format(s['action'], delta_time))
+                        abortFlight = True
+                        break
+                    else: # Sleep while waiting for segment to complete
+                        moreTime = duration-delta_time
+                        if moreTime > 0.1:
+                            time.sleep(0.1)
+                        else:
+                            time.sleep(moreTime)
+
+                if abortFlight:
+                    break            
+                r = responses.pop(0)
+                r = r.decode("utf-8")
+                r = r.rstrip("\r\n")
+                print(s['action'], ' has response of: ', r)
+            if grabFrameAtSegmentEnd:
+                extrHoverTime = -1
+                if 'extraHoverTime' in s.keys():
+                    extrHoverTime = s['extraHoverTime']
+                if extrHoverTime > 0.01:
+                    time.sleep(extrHoverTime)
+                img = frame_reader.frame
+                rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                imageBuffer.put(rgb_img)
+      
+        imageBuffer.put(None)
+        if abortFlight:
+            tello.land()  # this is a synchronous/blocking call, no need to wait after this call before sending next command
+        tello.streamoff() # this is a synchronous/blocking call, no need to wait after this call before sending next command
+    else:
+        # acquire image frames from other (streaming) sources???
+        rgb_img = cv2.imread("balloon_seen_stationary2.png")
+        imageBuffer.put(rgb_img)
+        imageBuffer.put(None)
+    print("Finished runing image frame aquirer.")
+
+def processImageFrames(imageBuffer:Queue, fn:int):
+    print('Running image frame processer...')
+    # process image frames
+    f = flights[flight_number]
+    start_time = int(time.time())
+    start_folder = os.path.join("../output", f['name'])
+    if not os.path.exists(start_folder):
+        os.makedirs(start_folder)
+    start_folder = os.path.join(start_folder, f'{start_time}')
+    if not os.path.exists(start_folder):
+        os.makedirs(start_folder)
+   
+    unprocessedOutputFolder = os.path.join(start_folder,  'unprocessed')
+    processedOutputFolder = os.path.join(start_folder, 'processed')
+    if not os.path.exists(unprocessedOutputFolder):
+        os.makedirs(unprocessedOutputFolder)
+    if not os.path.exists(processedOutputFolder):
+        os.makedirs(processedOutputFolder)    
+
+    nFrames = 0
+    while True:
+        item = imageBuffer.get()
+        if item is None:
+            break
+        img = colorAnalyzeImage(item, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+        #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # report
+        nFrames += 1
+        print("Processed ", nFrames, " frame(s) so far...")
+    # all done
+    print('Finished running image frame processer.')
+
+def missionTaskBeginner() -> int:
+    global flight_number
+    ib = Queue()
+    t1 = threading.Thread(target = processImageFrames, args=(ib, flight_number, ))
+    t2 = threading.Thread(target = acquireImageFrames, args=(ib, flight_number, ))                        
+    t1.start()
+    t2.start()
+    t2.join()
+    ib.put(None)
+    t1.join()
+
+    return 99
+
+def stationaryTask9() -> int:
+    tello = Tello()
+    tello.connect(retry_count=1) # this is a synchronous/blocking call, no need to wait after this call before sending next command
     # tello.set_video_direction(Tello.CAMERA_DOWNWARD)
     recordAndShowFrames(tello)
     return 9
-
-def missionTaskBeginner(tello:Tello) -> int:
-    global motion_stage, flights, flight_number
-    sync_lock = threading.Lock()
-    motion_stage = 0
-    #t1 = threading.Thread(target = perceiveObjects, args=(tello, sync_lock,))
-    t2 = threading.Thread(target = motionControl, args=(tello, sync_lock,))
-
-    tello.streamoff()
-    time.sleep(default_command_delay_time)
-        
-    tello.streamon()
-    time.sleep(default_command_delay_time)
-    #t1.start()
-    t2.start()
-    #t1.join()
-    stationaryTask9(tello)
-    t2.join()
-    
-    return 99
-
 
 def offlineTask103() -> int:
     rgb_img = cv2.imread("balloon_seen_stationary2.png")
@@ -334,40 +358,23 @@ def offlineTask103() -> int:
     return 103
 
 def main(argv):
-    tid = int(argv[0])
-    print("QST TID:", tid)
-    if tid < 100:
-        tello = Tello(retry_count=1)
-        # When connecting the drone to a home/office AP, we would need to find
-        # the drone's DHCP assigned IP address and provide it as the host argument.
-        # tello = Tello(host='192.168.50.170', retry_count=0)
-        tello.connect()
-        time.sleep(default_command_delay_time)
-        
-        b = tello.get_battery()
-        time.sleep(default_command_delay_time)
-        print("Battery level: ", b)
-
-        #tello.emergency()
-        #b = 1
-        if b < 15:
-            print("Battery too low!!! Abort!!!")
-            return
-        
-        #tello.streamon()
-        #time.sleep(0.5)
-        if tid == 9:
-            stationaryTask9(tello)
-        elif tid == 99:
-            missionTaskBeginner(tello)
-        #tello.streamoff()    
+    if len(argv) < 1:
+        tid = -1
+        print("Unkown TID.")
     else:
-        if tid == 101:
-            pass #offlineTask101()
-        elif tid == 103:
-            offlineTask103()
-        elif tid == 104:
-            pass #offlineTask104()    
+        tid = int(argv[0])
+        print("TID:", tid)
+    
+    if tid == 9:
+        stationaryTask9()
+    elif tid == 99:
+        missionTaskBeginner()
+    elif tid == 101:
+        pass #offlineTask101()
+    elif tid == 103:
+        offlineTask103()
+    elif tid == 104:
+        pass #offlineTask104()    
 
 if __name__ == "__main__":
    main(sys.argv[1:])

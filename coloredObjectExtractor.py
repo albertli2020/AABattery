@@ -30,12 +30,12 @@ class ColoredObjectExtractor:
           "hsvHigh1":[ 36//2, 106*255//100,  80*255//100],  
           "contourBgrColor": (3, 123, 214)
         },
-        "greenbrier": {"name": 'Greenbrier',
+        "green": {"name": 'Green',
           "hsvLow1": [120//2,  35*255//100,  45*255//100],
           "hsvHigh1":[144//2,  65*255//100,  75*255//100],
           "contourBgrColor": (93, 154, 77)
         },
-        "purple_opulence": {"name": 'Purple Opulence',
+        "purple": {"name": 'Purple',
           "hsvLow1": [244//2,  40*255//100,  52*255//100],
           "hsvHigh1":[264//2,  60*255//100,  72*255//100],
           "contourBgrColor": (159, 80, 98)
