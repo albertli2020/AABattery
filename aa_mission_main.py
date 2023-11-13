@@ -1,10 +1,12 @@
 import sys
 import os
+import glob
 import threading
 import time
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from queue import Queue
 
 from djitellopy import Tello
@@ -12,10 +14,12 @@ from coloredObjectExtractor import ColoredObjectExtractor
 
 default_command_delay_time = 0.1 #7
 picture_first_frame_delay_time = 4.0
+totalNumberFramesProcessed = 0
+processedImages = []
 
 flights = [
     # 0
-    {'name':'Offline', 'requiresDrone':False},
+    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Back-Forward-Back', 'initiallyAcquiredAt':'1699859907'},
     # 1
     {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
         {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
@@ -62,7 +66,7 @@ flights = [
        {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
        {'action':'ccw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
-flight_number = 5
+flight_number = 0
 
 colorKeyedObjectsDetectionConfigAndData = {
     'red': {'count': 0, 'min_area':150},
@@ -109,36 +113,9 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
     
     return image
 
-def motionControl(tello:Tello, fn:int) -> int:
-    # take a command from command queue and send to drone
-    tello.takeoff()
-    #time.sleep(default_command_delay_time)
-    
-    tello.move_up(20)
-    #time.sleep(default_command_delay_time)
-    h = tello.get_height()
-    #time.sleep(default_command_delay_time)
-    print("Hovering at height: ", h, "cm.")
-
-    if fn == 0:
-        panorama_full_counter_clockwise(tello)
-    elif fn == 1:
-        panorama_full_clockwise(tello)
-    elif fn == 2:
-        panorama_half_counter_clockwise(tello)
-    elif fn == 3:
-        panorama_half_clockwise(tello)
-    elif fn == 4:
-        panorama_move_forward(tello)
-    
-    #time.sleep(5)
-    tello.land()
-    #time.sleep(default_command_delay_time)
-    return 0
-
-def recordAndShowFrames(tello:Tello):
+def recordAndShowFrames(tello:Tello, fn:int):
     global numObjectsDetectedForColor
-    f = flights[flight_number]
+    f = flights[fn]
     start_time = int(time.time())
     output_folder = os.path.join("../output/processed", f["name"])
     output_folder = os.path.join(f["name"], f'{start_time}')
@@ -294,32 +271,46 @@ def acquireImageFrames(imageBuffer:Queue, flightNumber:int):
             tello.land()  # this is a synchronous/blocking call, no need to wait after this call before sending next command
         tello.streamoff() # this is a synchronous/blocking call, no need to wait after this call before sending next command
     else:
-        # acquire image frames from other (streaming) sources???
-        rgb_img = cv2.imread("balloon_seen_stationary2.png")
-        imageBuffer.put(rgb_img)
+        if 'unprocessed' in flights[flightNumber].keys():
+            start_folder = os.path.join('../output', flights[flightNumber]['unprocessed'])
+            start_folder = os.path.join(start_folder,  flights[flightNumber]['initiallyAcquiredAt'])
+            unprocessedOutputFolder = os.path.join(start_folder, 'unprocessed')
+            if not os.path.exists(unprocessedOutputFolder):
+                print('Unprocessed image folder not found!')
+            else:
+                fileList = glob.glob(os.path.join(unprocessedOutputFolder, '*.jpg'))
+                for f in fileList:
+                    rgb_img = cv2.imread(f)
+                    imageBuffer.put(rgb_img)
+        else:                   
+            # acquire image frames from other (streaming) sources???
+            rgb_img = cv2.imread("balloon_seen_stationary2.png")
+            imageBuffer.put(rgb_img)
         imageBuffer.put(None)
     print("Finished runing image frame aquirer.")
 
 def processImageFrames(imageBuffer:Queue, fn:int):
+    global totalNumberFramesProcessed, processedImages
     print('Running image frame processer...')
     # process image frames
-    f = flights[flight_number]
+    f = flights[fn]
     start_time = int(time.time())
-    start_folder = os.path.join("../output", f['name'])
+    start_folder = os.path.join('../output', f['name'])
     if not os.path.exists(start_folder):
         os.makedirs(start_folder)
     start_folder = os.path.join(start_folder, f'{start_time}')
     if not os.path.exists(start_folder):
         os.makedirs(start_folder)
-   
-    unprocessedOutputFolder = os.path.join(start_folder,  'unprocessed')
+    if f['requiresDrone']:
+        unprocessedOutputFolder = os.path.join(start_folder,  'unprocessed')
+        if not os.path.exists(unprocessedOutputFolder):
+            os.makedirs(unprocessedOutputFolder)
+    else:
+        unprocessedOutputFolder = None
     processedOutputFolder = os.path.join(start_folder, 'processed')
-    if not os.path.exists(unprocessedOutputFolder):
-        os.makedirs(unprocessedOutputFolder)
     if not os.path.exists(processedOutputFolder):
         os.makedirs(processedOutputFolder)    
 
-    nFrames = 0
     while True:
         item = imageBuffer.get()
         if item is None:
@@ -327,13 +318,15 @@ def processImageFrames(imageBuffer:Queue, fn:int):
         img = colorAnalyzeImage(item, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
         #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # report
-        nFrames += 1
-        print("Processed ", nFrames, " frame(s) so far...")
+        totalNumberFramesProcessed += 1
+        processedImages.append(img)
+        print("Processed ", totalNumberFramesProcessed, " frame(s) so far...")
+
     # all done
     print('Finished running image frame processer.')
 
 def missionTaskBeginner() -> int:
-    global flight_number
+    global flight_number, processedImages, totalNumberFramesProcessed
     ib = Queue()
     t1 = threading.Thread(target = processImageFrames, args=(ib, flight_number, ))
     t2 = threading.Thread(target = acquireImageFrames, args=(ib, flight_number, ))                        
@@ -342,6 +335,40 @@ def missionTaskBeginner() -> int:
     t2.join()
     ib.put(None)
     t1.join()
+    
+    #plt.figure(figsize=(12, 9))
+    colors = [] #list(colorKeyedObjectsDetectionConfigAndData.keys())
+    vs = []
+    for colorKey in colorKeyedObjectsDetectionConfigAndData.keys():
+        cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
+        colors.append(colorKey)
+        vs.append(cad['count'])
+
+    print("Main thread: totalNumberFramesProcessed -- ", totalNumberFramesProcessed)
+    if totalNumberFramesProcessed > 0:
+        plt.rcParams['ytick.right'] = plt.rcParams['ytick.labelright'] = True
+        plt.rcParams['ytick.left'] = plt.rcParams['ytick.labelleft'] = False
+        fig = plt.figure(figsize=(12, 9))
+        outer = gridspec.GridSpec(1, 2, wspace=0.05, width_ratios=[5,1])
+        nrows = int((totalNumberFramesProcessed+1)/2)
+        inner = gridspec.GridSpecFromSubplotSpec(nrows, 2, subplot_spec=outer[0], wspace=0.05, hspace=0.15)
+        for j in range(totalNumberFramesProcessed):
+            ax = plt.Subplot(fig, inner[j])
+            img = cv2.cvtColor(processedImages[j], cv2.COLOR_BGR2RGB)
+            ax.imshow(img)
+            #t = ax.text(0.5,0.5, 'outer=%d, inner=%d' % (i, j))
+            #t.set_ha('center')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title(f'Frame #{j+1}')
+            fig.add_subplot(ax)
+        ax = plt.Subplot(fig, outer[1])
+        ax.barh(colors, vs, color ='maroon', height = 0.4)
+        ax.set_xlabel("") #"Max No. of colored objects")
+        ax.set_ylabel("") #"Colors")
+        ax.set_title("Objects detected per color")
+        fig.add_subplot(ax)
+        plt.show()
 
     return 99
 
@@ -349,7 +376,7 @@ def stationaryTask9() -> int:
     tello = Tello()
     tello.connect(retry_count=1) # this is a synchronous/blocking call, no need to wait after this call before sending next command
     # tello.set_video_direction(Tello.CAMERA_DOWNWARD)
-    recordAndShowFrames(tello)
+    recordAndShowFrames(tello, flight_number)
     return 9
 
 def offlineTask103() -> int:

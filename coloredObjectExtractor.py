@@ -16,8 +16,8 @@ class ColoredObjectExtractor:
           "contourBgrColor": (113, 68, 1)
         },
         "light_blue": {"name": 'Light Blue',
-          "hsvLow1": [198//2,  48*255//100,  57*255//100],
-          "hsvHigh1":[218//2,  75*255//100,  87*255//100],
+          "hsvLow1": [198//2,  48*255//100,  52*255//100], #204, 55, 89
+          "hsvHigh1":[218//2,  75*255//100,  92*255//100],
           "contourBgrColor": (172, 120, 60)
         },
         "yellow": {"name": 'Yellow',
@@ -31,8 +31,8 @@ class ColoredObjectExtractor:
           "contourBgrColor": (3, 123, 214)
         },
         "green": {"name": 'Green',
-          "hsvLow1": [120//2,  35*255//100,  45*255//100],
-          "hsvHigh1":[144//2,  65*255//100,  75*255//100],
+          "hsvLow1": [120//2,  35*255//100,  40*255//100],
+          "hsvHigh1":[144//2,  65*255//100,  80*255//100],
           "contourBgrColor": (93, 154, 77)
         },
         "purple": {"name": 'Purple',
@@ -41,8 +41,8 @@ class ColoredObjectExtractor:
           "contourBgrColor": (159, 80, 98)
         },
         "light_green": {"name": 'Light Green',
-          "hsvLow1": [ 55//2,  40*255//100,  40*255//100], #86, 47, 76
-          "hsvHigh1":[ 90//2,  80*255//100,  90*255//100],
+          "hsvLow1": [ 56//2,  36*255//100,  36*255//100], #86, 47, 76
+          "hsvHigh1":[ 90//2,  80*255//100,  95*255//100], # to exclude 53, 42, 50
           "contourBgrColor": (48, 150, 131)
         } }
     
