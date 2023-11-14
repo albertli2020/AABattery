@@ -19,7 +19,7 @@ processedImages = []
 
 flights = [
     # 0
-    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Back-Forward-Back', 'initiallyAcquiredAt':'1699859907'},
+    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed75-Up-Back-Back-Forward', 'initiallyAcquiredAt':'1699922314'},
     # 1
     {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
         {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
@@ -67,13 +67,18 @@ flights = [
        {'action':'ccw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
     # 7   
-    {'name':'Speed75-Up-Back-Back-Forward', 'requiresDrone':True, 'flight_segments':[
+    {'name':'Speed85-Up-Back-Back-Forward', 'requiresDrone':True, 'flight_segments':[
         {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'speed 75', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'speed 85', 'frameGrabDelay': -1, 'durationLimit': 8},
         {'action':'up 50','frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'back 500', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':5,'durationLimit': 10},
+        {'action':'back 400', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':4,'durationLimit': 10},
         {'action':'back 200', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
         {'action':'forward 160', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':10,'durationLimit': 10},
+        {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+        {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+        {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
+        {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
         {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
 flight_number = 7
 
@@ -85,7 +90,7 @@ colorKeyedObjectsDetectionConfigAndData = {
     'orange': {'count': 0, 'min_area':150},
     'green': {'count': 0, 'min_area':150},
     'purple': {'count': 0, 'min_area':150},
-    'light_green': {'count': 0, 'min_area':200} }
+    'light_green': {'count': 0, 'min_area':80} }
 
 def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None):
     global colorKeyedObjectsDetectionConfigAndData
