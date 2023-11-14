@@ -65,8 +65,17 @@ flights = [
        {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
        {'action':'cw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
        {'action':'ccw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
-       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
-flight_number = 0
+       {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
+    # 7   
+    {'name':'Speed75-Up-Back-Back-Forward', 'requiresDrone':True, 'flight_segments':[
+        {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'speed 75', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'up 50','frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'back 500', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':5,'durationLimit': 10},
+        {'action':'back 200', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        {'action':'forward 160', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':10,'durationLimit': 10},
+        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
+flight_number = 7
 
 colorKeyedObjectsDetectionConfigAndData = {
     'red': {'count': 0, 'min_area':150},
