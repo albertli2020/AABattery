@@ -82,8 +82,20 @@ flights = [
         {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
         {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
         {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
-flight_number = 0
+        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
+    # 8   
+    {'name':'Speed100-Up-CW-Back-Back-Forward', 'requiresDrone':True, 'flight_segments':[
+        {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'speed 100', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'up 80','frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'cw 20', 'frameGrabDelay': -1, 'durationLimit': 8},
+        {'action':'back 400', 'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':1,'durationLimit': 10},
+        {'action':'back 200', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        {'action':'forward 160', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':6,'durationLimit': 10},
+        {'action':'ccw 40', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 8},
+        {'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1, 'durationLimit': 2 },
+        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] }  ]
+flight_number = 8
 
 colorKeyedObjectsDetectionConfigAndData = {
     'red': {'count': 0, 'min_area':150},
@@ -375,11 +387,13 @@ def processImageFrames(imageBuffer:Queue, fn:int):
     # all done
     print('Finished running image frame processer.')
 
-def missionTaskBeginner(showCharts=False) -> int:
+def missionTaskBeginner(showCharts=0) -> int:
     global flight_number, processedImages, totalNumberFramesProcessed, processedResults
     ib = Queue()
     t1 = threading.Thread(target = processImageFrames, args=(ib, flight_number, ))
-    t2 = threading.Thread(target = acquireImageFrames, args=(ib, flight_number, ))                        
+    t2 = threading.Thread(target = acquireImageFrames, args=(ib, flight_number, ))
+    s = time.time()
+    print("[MISSION INFO] -- start time:", s)                    
     t1.start()
     t2.start()
     t2.join()
@@ -387,8 +401,11 @@ def missionTaskBeginner(showCharts=False) -> int:
     t1.join()
 
     print("Main thread: totalNumberFramesProcessed -- ", totalNumberFramesProcessed)
+    e =  time.time()
+    print("[MISSION INFO] -- end time:", e)
+    print("[MISSION INFO] -- total flight + processing time:", e-s, "seconds.")
 
-    if not showCharts:
+    if showCharts < 1:
         print("Results: ", processedResults)
         return 0
     if totalNumberFramesProcessed > 0:
@@ -492,7 +509,7 @@ def main(argv):
         print("Unkown TID.")
     else:
         if len(argv) >= 2:
-            showCharts = argv[1]
+            showCharts = int(argv[1])
         tid = int(argv[0])
         print("TID:", tid)
     
