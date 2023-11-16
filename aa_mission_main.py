@@ -7,7 +7,9 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.widgets import Button
 from queue import Queue
+import csv
 
 from djitellopy import Tello
 from coloredObjectExtractor import ColoredObjectExtractor
@@ -16,10 +18,11 @@ default_command_delay_time = 0.1 #7
 picture_first_frame_delay_time = 4.0
 totalNumberFramesProcessed = 0
 processedImages = []
+processedResults = []
 
 flights = [
     # 0
-    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed75-Up-Back-Back-Forward', 'initiallyAcquiredAt':'1699922314'},
+    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed75-Up-Back-Back-Forward', 'initiallyAcquiredAt':'1699923294'},
     # 1
     {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
         {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
@@ -80,7 +83,7 @@ flights = [
         {'action':'ccw 60', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 8},
         {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
         {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] } ]
-flight_number = 7
+flight_number = 0
 
 colorKeyedObjectsDetectionConfigAndData = {
     'red': {'count': 0, 'min_area':150},
@@ -90,10 +93,22 @@ colorKeyedObjectsDetectionConfigAndData = {
     'orange': {'count': 0, 'min_area':150},
     'green': {'count': 0, 'min_area':150},
     'purple': {'count': 0, 'min_area':150},
-    'light_green': {'count': 0, 'min_area':80} }
+    'light_green': {'count': 0, 'min_area':10},
+    'pink': {'count': 0, 'min_area':150},  }
+
+def getColorsAndCounts(configAndData):
+    colors = [] #list(colorKeyedObjectsDetectionConfigAndData.keys())
+    counts = []
+    for colorKey in configAndData.keys():
+        cad = configAndData[colorKey]
+        colors.append(colorKey)
+        counts.append(cad['count'])
+    return colors, counts
 
 def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None):
     global colorKeyedObjectsDetectionConfigAndData
+    # [colorKey, minArea, x, y, h, w, a, r]
+    fields = ['colorKey', 'minArea', 'center_x', 'center_y', 'height', 'width', 'area', 'ratio']
     if saveInputImageToFolder is None:
         pass
     else:
@@ -105,21 +120,39 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
     #hsv[:, :, 2] = hsv[:, :, 2] * .95
     #image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR) 
 
+    value = []
     for colorKey in colorKeyedObjectsDetectionConfigAndData.keys():
         cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
         coe = ColoredObjectExtractor(colorKey)
         minArea = cad['min_area']
-        objs = coe.extract(hsv, minArea, image)
+        coe.extract(hsv, minArea, image, True)
+        objs = coe.extract(hsv, minArea, image, False)
         n = cad['count']
         nThisFrame = len(objs)
         if n < nThisFrame:
             cad['count'] = nThisFrame
+        for i in range(nThisFrame):
+            ((x,y),(h,w), a, r) = objs[i]  
+            value.append({'colorKey':colorKey,
+                          'minArea':minArea,
+                          'center_x':x,
+                          'center_y':y,
+                          'height':h,
+                          'width':w,
+                          'area':a,
+                          'ratio':r})
 
     if saveAnalyzedImageToFolder is None:
         pass
     else:
         of_path = os.path.join(saveAnalyzedImageToFolder, f'aa_{time.time()}.jpg')
         cv2.imwrite(of_path, image)
+        csv_path = os.path.join(saveAnalyzedImageToFolder, f'aa_{time.time()}.csv')
+        with open(csv_path, 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames = fields)
+            writer.writeheader()
+            #writer = csv.writer(file)
+            writer.writerows(value)
 
     if show_image:
         cv2.imshow("color analysis result",image)
@@ -304,7 +337,7 @@ def acquireImageFrames(imageBuffer:Queue, flightNumber:int):
     print("Finished runing image frame aquirer.")
 
 def processImageFrames(imageBuffer:Queue, fn:int):
-    global totalNumberFramesProcessed, processedImages
+    global totalNumberFramesProcessed, processedImages, processedResults
     print('Running image frame processer...')
     # process image frames
     f = flights[fn]
@@ -329,18 +362,21 @@ def processImageFrames(imageBuffer:Queue, fn:int):
         item = imageBuffer.get()
         if item is None:
             break
-        img = colorAnalyzeImage(item, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
-        #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        # report
-        totalNumberFramesProcessed += 1
-        processedImages.append(img)
-        print("Processed ", totalNumberFramesProcessed, " frame(s) so far...")
+        if totalNumberFramesProcessed < 100: #12:
+            img = colorAnalyzeImage(item, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+            #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            totalNumberFramesProcessed += 1
+            processedImages.append(img)
+            colors, counts = getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
+            processedResults.append((colors, counts))
+
+            print("Processed ", totalNumberFramesProcessed, " frame(s) so far...")
 
     # all done
     print('Finished running image frame processer.')
 
-def missionTaskBeginner() -> int:
-    global flight_number, processedImages, totalNumberFramesProcessed
+def missionTaskBeginner(showCharts=False) -> int:
+    global flight_number, processedImages, totalNumberFramesProcessed, processedResults
     ib = Queue()
     t1 = threading.Thread(target = processImageFrames, args=(ib, flight_number, ))
     t2 = threading.Thread(target = acquireImageFrames, args=(ib, flight_number, ))                        
@@ -349,39 +385,90 @@ def missionTaskBeginner() -> int:
     t2.join()
     ib.put(None)
     t1.join()
-    
-    #plt.figure(figsize=(12, 9))
-    colors = [] #list(colorKeyedObjectsDetectionConfigAndData.keys())
-    vs = []
-    for colorKey in colorKeyedObjectsDetectionConfigAndData.keys():
-        cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
-        colors.append(colorKey)
-        vs.append(cad['count'])
 
     print("Main thread: totalNumberFramesProcessed -- ", totalNumberFramesProcessed)
+
+    if not showCharts:
+        print("Results: ", processedResults)
+        return 0
     if totalNumberFramesProcessed > 0:
-        plt.rcParams['ytick.right'] = plt.rcParams['ytick.labelright'] = True
-        plt.rcParams['ytick.left'] = plt.rcParams['ytick.labelleft'] = False
+
         fig = plt.figure(figsize=(12, 9))
-        outer = gridspec.GridSpec(1, 2, wspace=0.05, width_ratios=[5,1])
+
+        inner = gridspec.GridSpec(2, 1, hspace=0.2, height_ratios=[1,5])
+        ax0 = plt.Subplot(fig, inner[0])
+        ax1 = plt.Subplot(fig, inner[1])
+        #ax0.set_xticks([])
+        #ax0.set_yticks([])
+        ax1.set_xticks([])
+        ax1.set_yticks([])
+        ax0.set_title("Objects detected per color")
+        #ax0.bar(colors, vs, color ='maroon', width = 0.3)
+        fig.add_subplot(ax0)
+        fig.add_subplot(ax1)
+
+
         nrows = int((totalNumberFramesProcessed+1)/2)
-        inner = gridspec.GridSpecFromSubplotSpec(nrows, 2, subplot_spec=outer[0], wspace=0.05, hspace=0.15)
-        for j in range(totalNumberFramesProcessed):
-            ax = plt.Subplot(fig, inner[j])
-            img = cv2.cvtColor(processedImages[j], cv2.COLOR_BGR2RGB)
-            ax.imshow(img)
-            #t = ax.text(0.5,0.5, 'outer=%d, inner=%d' % (i, j))
-            #t.set_ha('center')
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_title(f'Frame #{j+1}')
-            fig.add_subplot(ax)
-        ax = plt.Subplot(fig, outer[1])
-        ax.barh(colors, vs, color ='maroon', height = 0.4)
-        ax.set_xlabel("") #"Max No. of colored objects")
-        ax.set_ylabel("") #"Colors")
-        ax.set_title("Objects detected per color")
-        fig.add_subplot(ax)
+        j = 0
+        ris = []
+        for i in range(nrows):
+            img0 = cv2.cvtColor(processedImages[j], cv2.COLOR_BGR2RGB)
+            j+=1
+            if j<totalNumberFramesProcessed:
+                img1 = cv2.cvtColor(processedImages[j], cv2.COLOR_BGR2RGB)
+                ri = cv2.hconcat([img0, img1])
+                j+=1
+            else:
+                ri = img0
+            ris.append(ri)
+
+        concatedImage = cv2.vconcat(ris)
+        
+        class Index:
+            def __init__(self):
+                self.ind = 0
+                self.prev(None)
+
+            def next(self, event):
+                if self.ind < (totalNumberFramesProcessed-1):
+
+                    self.ind += 1
+                    img = cv2.cvtColor(processedImages[self.ind], cv2.COLOR_BGR2RGB)
+                    ax1.imshow(img)
+                    ax1.set_title(f'Frame #{self.ind}')
+                    (colors, vs) = processedResults[self.ind]
+                    ax0.clear()
+                    ax0.bar(colors, vs, color ='maroon', width = 0.3)
+                    plt.draw()
+
+            def prev(self, event):
+                if self.ind > 0:
+                    self.ind -= 1
+                    img = cv2.cvtColor(processedImages[self.ind], cv2.COLOR_BGR2RGB)
+                    ax1.imshow(img)
+                    ax1.set_title(f'Frame #{self.ind}')
+                    (colors, vs) = processedResults[self.ind]
+                    ax0.clear()
+                    ax0.bar(colors, vs, color ='maroon', width = 0.3)
+                    plt.draw()
+                elif self.ind == 0:
+                    self.ind -= 1
+                    ax1.imshow(concatedImage)
+                    ax1.set_title('All frames')
+                    (colors, vs) = getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
+                    ax0.clear()
+                    ax0.bar(colors, vs, color ='maroon', width = 0.3)
+                    plt.draw()
+
+        callback = Index()
+        axprev = fig.add_axes([0.125, 0.02, 0.1, 0.075])
+        axnext = fig.add_axes([0.8, 0.02, 0.1, 0.075])
+        bnext = Button(axnext, 'Next')
+        bnext.on_clicked(callback.next)
+        bprev = Button(axprev, 'Previous')
+        bprev.on_clicked(callback.prev)
+
+
         plt.show()
 
     return 99
@@ -399,17 +486,20 @@ def offlineTask103() -> int:
     return 103
 
 def main(argv):
+    showCharts = 0
     if len(argv) < 1:
         tid = -1
         print("Unkown TID.")
     else:
+        if len(argv) >= 2:
+            showCharts = argv[1]
         tid = int(argv[0])
         print("TID:", tid)
     
     if tid == 9:
         stationaryTask9()
     elif tid == 99:
-        missionTaskBeginner()
+        missionTaskBeginner(showCharts)
     elif tid == 101:
         pass #offlineTask101()
     elif tid == 103:
