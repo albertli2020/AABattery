@@ -59,12 +59,10 @@ class ColoredObjectExtractor:
     }
   
     
-    def __init__(self, color_key_str, init_min_areas=[0, 0]):
+    def __init__(self, color_key_str, min_area, max_area):
         self.colorKey = color_key_str
-        self.numObjectTypes = len(init_min_areas)
-        self.objectCounters = [0] * self.numObjectTypes
-        self.objectDetails = [[]] * self.numObjectTypes
-        #print("ColorKey is: ",  self.colorKey)
+        self.minArea = min_area
+        self.maxArea = max_area
         self.colorName = ColoredObjectExtractor.COLORS[color_key_str]['name']
         self.contourBgrColor =  ColoredObjectExtractor.COLORS[color_key_str]["contourBgrColor"]
         self.hsvLow1 = np.array(ColoredObjectExtractor.COLORS[color_key_str]["hsvLow1"])
@@ -76,20 +74,20 @@ class ColoredObjectExtractor:
             self.hsvLow2 = None
             self.hsvHigh2 = None
 
-    def extract(self, hsv, min_area, max_area, bgr_img=None, autoTune = False):
+    def extract(self, hsv, bgr_img=None, autoTune = False):
         returnedObjects = []
         inRange = cv2.inRange(hsv, self.hsvLow1, self.hsvHigh1)
         if self.hsvLow2 is None:
             pass
         else:
             inRange += cv2.inRange(hsv, self.hsvLow2, self.hsvHigh2)
-        cnts, hierarchy = cv2.findContours(inRange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        count = len(cnts)
+        contours, hierarchy = cv2.findContours(inRange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        count = len(contours)
         if count > 0:
             # find the biggest countour (c) by the area
-            cgs = sorted(cnts, key=cv2.contourArea, reverse=True)
+            cgs = sorted(contours, key=cv2.contourArea, reverse=True)
             max_count = ColoredObjectExtractor.MAX_NUM_OBJECTS_PER_COLOR
-            if max_area < 1000:
+            if self.maxArea < 1000:
                 max_count = 40
                 max_r = 1.10
             else:
@@ -104,10 +102,10 @@ class ColoredObjectExtractor:
                 c = cgs[i]
                 #x,y,w,h = cv2.boundingRect(c)
                 a = cv2.contourArea(c)
-                print(self.colorName, min_area, max_area, maxArea, a) 
-                if a < min_area:
+                print(self.colorName, self.minArea, self.maxArea, maxArea, a) 
+                if a < self.minArea:
                   break
-                if a >= min_area and a<=max_area:
+                if a >= self.minArea and a <= self.maxArea:
                     if maxArea > 999999:
                         maxArea = a
                         ar = 1.0
@@ -118,31 +116,6 @@ class ColoredObjectExtractor:
                         e = cv2.fitEllipse(c)
                         ((x, y), (h, w), _) = e
                   
-                        '''
-                        epsilon = 0.0125*cv2.arcLength(c,True)
-                        approx = cv2.approxPolyDP(c,epsilon,True)
-                        if False:
-                            pts = []
-                            for kp in kps:
-                                pts.append(kp.pt)
-                            e = cv2.fitEllipse(pts)
-                            ox = x - w/2
-                            oy = y - h/2
-                            ((x, y), (h, w), angle) = e
-                            x += ox
-                            y += oy
-                            e = ((x, y), (h, w), angle)
-                        elif False:
-                            if len(kps):
-                                x = kps[0].pt[0]
-                                y = kps[0].pt[1]
-                                h = kps[0].size
-                                w = h
-                                print(x, y, h, w)
-                        else:
-                            e = cv2.fitEllipse(approx)
-                            ((x, y), (h, w), _) = e
-                        '''
                         if autoTune:
                           self.autotuneParams(hsv, e)
                         

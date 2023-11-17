@@ -156,11 +156,11 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
     value = []
     for colorKey in colorKeyedObjectsDetectionConfigAndData.keys():
         cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
-        coe = ColoredObjectExtractor(colorKey)
         minArea = cad['min_area']
         maxArea = cad['max_area']
-        #coe.extract(hsv, minArea, maxArea, image, True)
-        objs = coe.extract(hsv, minArea, maxArea, image, False)
+        coe = ColoredObjectExtractor(colorKey, min_area=minArea, max_area=maxArea)
+        #coe.extract(hsv, image, True)
+        objs = coe.extract(hsv, image, False)
         n = cad['count']
         nThisFrame = len(objs)
         if n < nThisFrame:
@@ -169,6 +169,7 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
             ((x,y),(h,w), a, r) = objs[i]  
             value.append({'colorKey':colorKey,
                           'minArea':minArea,
+                          'minArea':maxArea,
                           'center_x':x,
                           'center_y':y,
                           'height':h,
