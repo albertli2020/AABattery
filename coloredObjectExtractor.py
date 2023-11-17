@@ -4,10 +4,10 @@ class ColoredObjectExtractor:
     MAX_NUM_OBJECTS_PER_COLOR = 6
     COLORS = {
         "red": {"name": 'Red',
-          "hsvLow1": [  0//2,  90*255//100,  60*255//100], # 351, 84, 65
+          "hsvLow1": [  0//2,  90*255//100,  40*255//100], # 351, 84, 65
           "hsvHigh1":[ 20//2, 100*255//100,  80*255//100], # 348, 77, 83
-          "hsvLow2": [340//2,  72*255//100,  60*255//100], # 349, 74, 83
-          "hsvHigh2":[360//2, 100*255//100,  86*255//100],
+          "hsvLow2": [340//2,  72*255//100,  40*255//100], # 349, 74, 83
+          "hsvHigh2":[360//2, 100*255//100,  80*255//100], # 359, 89, 44
           "contourBgrColor": (0, 0, 255)
         },
         "blue" : {"name": 'Blue',
@@ -31,8 +31,8 @@ class ColoredObjectExtractor:
           "contourBgrColor": (3, 123, 214)
         },
         "green": {"name": 'Green',
-          "hsvLow1": [120//2,  40*255//100,  40*255//100], #153, 92, 67
-          "hsvHigh1":[160//2,  95*255//100,  80*255//100],
+          "hsvLow1": [80//2,  40*255//100,  20*255//100], #88, 61, 24
+          "hsvHigh1":[110//2,  90*255//100,  50*255//100], #101, 53, 21
           "contourBgrColor": (93, 154, 77)
         },
         "purple": {"name": 'Purple',
@@ -41,15 +41,23 @@ class ColoredObjectExtractor:
           "contourBgrColor": (159, 80, 98)
         },
         "light_green": {"name": 'Light Green',
-          "hsvLow1": [ 70//2,  30*255//100,  36*255//100], #110, 33, 80
+          "hsvLow1": [ 70//2,  30*255//100,  76*255//100], #110, 33, 80
           "hsvHigh1":[ 120//2,  80*255//100,  95*255//100], # to exclude 53, 42, 50
           "contourBgrColor": (48, 150, 131)
+        },
+        "tennis_ball": {"name": 'Tennis Ball Y',
+          "hsvLow1": [ 55//2,  16*255//100,  56*255//100],  #52, 43, 66
+          "hsvHigh1":[ 65//2,  36*255//100,  76*255//100],  #61, 26, 66
+          "hsvLow2": [ 50//2,  40*255//100,  60*255//100],  #61, 61, 68
+          "hsvHigh2":[ 65//2,  68*255//100,  80*255//100],  #59, 57, 72
+          "contourBgrColor": (43, 166, 164)
         },
         "pink": {"name": 'Pink',
           "hsvLow1": [ 295//2,  18*255//100,  76*255//100], #308, 27, 98; 313, 34, 93
           "hsvHigh1":[ 330//2,  48*255//100,  108*255//100], #313, 33, 96; 321, 40, 86;  300, 19, 100
           "contourBgrColor": (229, 166, 247) }
     }
+  
     
     def __init__(self, color_key_str, init_min_areas=[0, 0]):
         self.colorKey = color_key_str
@@ -68,7 +76,7 @@ class ColoredObjectExtractor:
             self.hsvLow2 = None
             self.hsvHigh2 = None
 
-    def extract(self, hsv, min_area, bgr_img=None, autoTune = False):
+    def extract(self, hsv, min_area, max_area, bgr_img=None, autoTune = False):
         returnedObjects = []
         inRange = cv2.inRange(hsv, self.hsvLow1, self.hsvHigh1)
         if self.hsvLow2 is None:
@@ -80,65 +88,86 @@ class ColoredObjectExtractor:
         if count > 0:
             # find the biggest countour (c) by the area
             cgs = sorted(cnts, key=cv2.contourArea, reverse=True)
-            if count > ColoredObjectExtractor.MAX_NUM_OBJECTS_PER_COLOR:
-                count =  ColoredObjectExtractor.MAX_NUM_OBJECTS_PER_COLOR
+            max_count = ColoredObjectExtractor.MAX_NUM_OBJECTS_PER_COLOR
+            if max_area < 1000:
+                max_count = 40
+                max_r = 1.10
+            else:
+                max_r = 1.25
+                
+            if count > max_count:
+                count =  max_count
+            
             num_detected_Objects = 0
             maxArea = 1000000.0
             for i in range(count):
                 c = cgs[i]
                 #x,y,w,h = cv2.boundingRect(c)
                 a = cv2.contourArea(c)
-                if i == 0:
-                    maxArea = a
-                    ar = 1.0
-                else:
-                    ar = a / maxArea    
-                if a >= min_area and ar > .2 :#400: #1000:#5000:         
-                    # draw the biggest contour (c) in green
-                    e = cv2.fitEllipse(c)
-                    ((x, y), (h, w), _) = e
-                    '''
-                    epsilon = 0.0125*cv2.arcLength(c,True)
-                    approx = cv2.approxPolyDP(c,epsilon,True)
-                    if False:
-                        pts = []
-                        for kp in kps:
-                            pts.append(kp.pt)
-                        e = cv2.fitEllipse(pts)
-                        ox = x - w/2
-                        oy = y - h/2
-                        ((x, y), (h, w), angle) = e
-                        x += ox
-                        y += oy
-                        e = ((x, y), (h, w), angle)
-                    elif False:
-                        if len(kps):
-                            x = kps[0].pt[0]
-                            y = kps[0].pt[1]
-                            h = kps[0].size
-                            w = h
-                            print(x, y, h, w)
+                print(self.colorName, min_area, max_area, maxArea, a) 
+                if a < min_area:
+                  break
+                if a >= min_area and a<=max_area:
+                    if maxArea > 999999:
+                        maxArea = a
+                        ar = 1.0
                     else:
-                        e = cv2.fitEllipse(approx)
+                        ar = a / maxArea    
+                    if ar > .02 :#400: #1000:#5000:         
+
+                        e = cv2.fitEllipse(c)
                         ((x, y), (h, w), _) = e
-                    '''
-                    if autoTune:
-                      self.autotuneParams(hsv, e)
-                    ea = (3.1415926/4.0)*h*w
-                    r = ea/a
-                    if r>0.92 and r<1.8: #1.8:#15: #1.08:
-                        num_detected_Objects += 1
-                        if bgr_img is None:
-                            pass
+                  
+                        '''
+                        epsilon = 0.0125*cv2.arcLength(c,True)
+                        approx = cv2.approxPolyDP(c,epsilon,True)
+                        if False:
+                            pts = []
+                            for kp in kps:
+                                pts.append(kp.pt)
+                            e = cv2.fitEllipse(pts)
+                            ox = x - w/2
+                            oy = y - h/2
+                            ((x, y), (h, w), angle) = e
+                            x += ox
+                            y += oy
+                            e = ((x, y), (h, w), angle)
+                        elif False:
+                            if len(kps):
+                                x = kps[0].pt[0]
+                                y = kps[0].pt[1]
+                                h = kps[0].size
+                                w = h
+                                print(x, y, h, w)
                         else:
-                            cv2.ellipse(bgr_img, e, self.contourBgrColor, 5)
-                            s = "{:.1f}, {:.3f}".format(a,r)
-                            #s = self.colorName
-                            cv2.putText(bgr_img, s, (int(x) - 50, int(y)+40),
-                                        cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.5, self.contourBgrColor, 2, cv2.LINE_AA)
+                            e = cv2.fitEllipse(approx)
+                            ((x, y), (h, w), _) = e
+                        '''
+                        if autoTune:
+                          self.autotuneParams(hsv, e)
+                        
+                        h_o_w = h/w
+                        r = 1.0
                         if not autoTune:
-                            print(self.colorName, num_detected_Objects," detected with area =", a, r)
-                        returnedObjects.append(((x,y),(h,w), a, r))
+                          if h_o_w > 20.0:
+                            r = 10.0
+                        if r < 5.0:  
+                            ea = (3.1415926/4.0)*h*w
+                            r = ea/a
+                        print(h_o_w, r)    
+                        if r>0.92 and r<max_r: #1.8:#15: #1.08:
+                            num_detected_Objects += 1
+                            if bgr_img is None:
+                                pass
+                            else:
+                                cv2.ellipse(bgr_img, e, self.contourBgrColor, 5)
+                                s = "{:.1f}, {:.3f}".format(a,r)
+                                #s = self.colorName
+                                cv2.putText(bgr_img, s, (int(x) - 50, int(y)+40),
+                                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.5, self.contourBgrColor, 2, cv2.LINE_AA)
+                            if not autoTune:
+                                print(self.colorName, num_detected_Objects," detected with area =", a, r)
+                            returnedObjects.append(((x,y),(h,w), a, r))
 
         return returnedObjects
 

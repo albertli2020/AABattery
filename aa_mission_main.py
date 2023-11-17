@@ -22,7 +22,7 @@ processedResults = []
 
 flights = [
     # 0
-    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed75-Up-Back-Back-Forward', 'initiallyAcquiredAt':'1699923294'},
+    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed100-Up-CW-Back-Back-CW-Forward-CCW', 'initiallyAcquiredAt':'1700199542'},
     # 1
     {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
         {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
@@ -84,29 +84,50 @@ flights = [
         {'action':'cw 90', 'frameGrabDelay': -1, 'durationLimit': 8},
         {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] },
     # 8   
-    {'name':'Speed100-Up-CW-Back-Back-Forward', 'requiresDrone':True, 'flight_segments':[
-        {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'speed 100', 'frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'up 80','frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'cw 20', 'frameGrabDelay': -1, 'durationLimit': 8},
-        {'action':'back 400', 'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':1,'durationLimit': 10},
-        {'action':'back 200', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
-        {'action':'forward 160', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':6,'durationLimit': 10},
-        {'action':'ccw 40', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 8},
-        {'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1, 'durationLimit': 2 },
-        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 8} ] }  ]
+    {'name':'Speed100-Up-CW-Back-Back-CW-Forward-CCW', 'requiresDrone':True, 'flight_segments':[
+        {'action':'takeoff', 'frameGrabDelay': -1, 'durationLimit': 15},
+        {'action':'speed 75', 'frameGrabDelay': -1, 'durationLimit': 10},
+        #{'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':4,'durationLimit': 8},
+        #{'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':4,'durationLimit': 8},
+        #{'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':4,'durationLimit': 8},
+        #{'action':'cw 80', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':4,'durationLimit': 8},
+        #{'action':'cw 40', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':4,'durationLimit': 8},
+        {'action':'up 80','frameGrabDelay': -1, 'durationLimit': 20},
+        {'action':'cw 30', 'frameGrabDelay': -1, 'durationLimit': 20},
+        {'action':'back 420','frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 20},
+        #{'action':'back 140', 'frameGrabDelay': 0, 'frameGrabInterval': 0.2, 'numFrameGrabIntervals':6,'durationLimit': 10},
+        #{'action':'cw 15', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        {'frameGrabDelay': 0.5, 'frameGrabInterval': 0.5, 'numFrameGrabIntervals':4, 'durationLimit': 3 },
+        {'action':'down 20','frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 20},
+        {'action':'cw 15', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 10},
+        {'frameGrabDelay': 0.5, 'frameGrabInterval': 0.5, 'numFrameGrabIntervals':4, 'durationLimit': 3 },
+        #{'action':'forward 150', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1,'durationLimit': 20},
+         #'frameGrabDelay': 0, 'frameGrabInterval': 0.5, 'numFrameGrabIntervals':4,'durationLimit': 10},
+        #{'action':'cw 75', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        {'action':'down 95','frameGrabDelay': -1, 'durationLimit': 10},
+        {'action':'forward 160', 'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':3,'durationLimit': 20},
+        #{'action':'down 40','frameGrabDelay':  0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        #{'action':'forward 60', 'frameGrabDelay': 0, 'frameGrabInterval': 0.5, 'numFrameGrabIntervals':4,'durationLimit': 10},
+        #{'action':'ccw 45', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        #{'action':'ccw 45', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        #{'action':'ccw 45', 'frameGrabDelay': 0.1, 'frameGrabInterval': 1, 'numFrameGrabIntervals':2,'durationLimit': 10},
+        #{'action':'ccw 30', 'frameGrabDelay': -1, 'durationLimit': 10},
+        #{'frameGrabDelay': 0, 'frameGrabInterval': 1, 'numFrameGrabIntervals':1, 'durationLimit': 2 },
+        {'action':'land', 'frameGrabDelay': -1, 'durationLimit': 10} ] }  ]
 flight_number = 8
 
 colorKeyedObjectsDetectionConfigAndData = {
-    'red': {'count': 0, 'min_area':150},
-    'blue': {'count': 0, 'min_area':150},
-    'light_blue': {'count': 0, 'min_area':150},
-    'yellow': {'count': 0, 'min_area':200},
-    'orange': {'count': 0, 'min_area':150},
-    'green': {'count': 0, 'min_area':150},
-    'purple': {'count': 0, 'min_area':150},
-    'light_green': {'count': 0, 'min_area':10},
-    'pink': {'count': 0, 'min_area':150},  }
+    'red': {'count': 0, 'min_area':500, 'max_area':20000},
+    'blue': {'count': 0, 'min_area':500, 'max_area':20000},
+    'light_blue': {'count': 0, 'min_area':500, 'max_area':20000},
+    'yellow': {'count': 0, 'min_area':500, 'max_area':20000},
+    'orange': {'count': 0, 'min_area':500, 'max_area':20000},
+    'green': {'count': 0, 'min_area':500, 'max_area':20000},
+    'purple': {'count': 0, 'min_area':500, 'max_area':20000},
+    'light_green': {'count': 0, 'min_area':500, 'max_area':20000},
+    'tennis_ball': {'count': 0, 'min_area':20, 'max_area':250},
+    #'tennis_ball2': {'count': 0, 'min_area':10, 'max_area':300},
+    'pink': {'count': 0, 'min_area':500, 'max_area':20000}  }
 
 def getColorsAndCounts(configAndData):
     colors = [] #list(colorKeyedObjectsDetectionConfigAndData.keys())
@@ -137,8 +158,9 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
         cad = colorKeyedObjectsDetectionConfigAndData[colorKey]
         coe = ColoredObjectExtractor(colorKey)
         minArea = cad['min_area']
-        coe.extract(hsv, minArea, image, True)
-        objs = coe.extract(hsv, minArea, image, False)
+        maxArea = cad['max_area']
+        #coe.extract(hsv, minArea, maxArea, image, True)
+        objs = coe.extract(hsv, minArea, maxArea, image, False)
         n = cad['count']
         nThisFrame = len(objs)
         if n < nThisFrame:
@@ -404,13 +426,16 @@ def missionTaskBeginner(showCharts=0) -> int:
     e =  time.time()
     print("[MISSION INFO] -- end time:", e)
     print("[MISSION INFO] -- total flight + processing time:", e-s, "seconds.")
-
+    print("[MISSION INFO] -- Frame by frame PROGRESSIVE results recap:")
+    frn = 0 
+    for pr in processedResults:
+        print(frn, pr)
+        frn += 1
     if showCharts < 1:
-        print("Results: ", processedResults)
         return 0
     if totalNumberFramesProcessed > 0:
 
-        fig = plt.figure(figsize=(12, 9))
+        fig = plt.figure(figsize=(12, 8))
 
         inner = gridspec.GridSpec(2, 1, hspace=0.2, height_ratios=[1,5])
         ax0 = plt.Subplot(fig, inner[0])
@@ -434,10 +459,11 @@ def missionTaskBeginner(showCharts=0) -> int:
             if j<totalNumberFramesProcessed:
                 img1 = cv2.cvtColor(processedImages[j], cv2.COLOR_BGR2RGB)
                 ri = cv2.hconcat([img0, img1])
+                ris.append(ri)
                 j+=1
             else:
                 ri = img0
-            ris.append(ri)
+
 
         concatedImage = cv2.vconcat(ris)
         
@@ -504,25 +530,16 @@ def offlineTask103() -> int:
 
 def main(argv):
     showCharts = 0
+    global flight_number
     if len(argv) < 1:
-        tid = -1
-        print("Unkown TID.")
+        print("Unkown flight #. Abort.")
     else:
         if len(argv) >= 2:
             showCharts = int(argv[1])
-        tid = int(argv[0])
-        print("TID:", tid)
-    
-    if tid == 9:
-        stationaryTask9()
-    elif tid == 99:
-        missionTaskBeginner(showCharts)
-    elif tid == 101:
-        pass #offlineTask101()
-    elif tid == 103:
-        offlineTask103()
-    elif tid == 104:
-        pass #offlineTask104()    
+        flight_number = int(argv[0])
+        print("Taking flight #: ", flight_number)
+        
+    missionTaskBeginner(showCharts)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
