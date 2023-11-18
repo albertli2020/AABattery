@@ -22,7 +22,8 @@ processedResults = []
 
 flights = [
     # 0
-    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed100-Up-CW-Back-Back-CW-Forward-CCW', 'initiallyAcquiredAt':'1700199542'},
+    {'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed75-Up-Back-Back-Forward', 'initiallyAcquiredAt':'1699923999'},
+    #{'name':'Offline', 'requiresDrone':False, 'unprocessed':'Speed100-Up-CW-Back-Back-CW-Forward-CCW', 'initiallyAcquiredAt':'1700199542'},
     # 1
     {'name':'Stationary', 'requiresDrone':True, 'flight_segments':[
         {'frameGrabDelay': 1, 'frameGrabInterval': 2, 'numFrameGrabIntervals':3, 'durationLimit': 10 } ] },
@@ -117,17 +118,17 @@ flights = [
 flight_number = 8
 
 colorKeyedObjectsDetectionConfigAndData = {
-    'red': {'count': 0, 'min_area':500, 'max_area':20000},
+    'red': {'count': 0, 'min_area':500, 'max_area':200000},
     'blue': {'count': 0, 'min_area':500, 'max_area':20000},
     'light_blue': {'count': 0, 'min_area':500, 'max_area':20000},
-    'yellow': {'count': 0, 'min_area':500, 'max_area':20000},
+    'yellow': {'count': 0, 'min_area':500, 'max_area':200000},
     'orange': {'count': 0, 'min_area':500, 'max_area':20000},
     'green': {'count': 0, 'min_area':500, 'max_area':20000},
     'purple': {'count': 0, 'min_area':500, 'max_area':20000},
     'light_green': {'count': 0, 'min_area':500, 'max_area':20000},
     'tennis_ball': {'count': 0, 'min_area':20, 'max_area':250},
     #'tennis_ball2': {'count': 0, 'min_area':10, 'max_area':300},
-    'pink': {'count': 0, 'min_area':500, 'max_area':20000}  }
+    'pink': {'count': 0, 'min_area':500, 'max_area':200000}  }
 
 def getColorsAndCounts(configAndData):
     colors = [] #list(colorKeyedObjectsDetectionConfigAndData.keys())
@@ -141,10 +142,8 @@ def getColorsAndCounts(configAndData):
 def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None):
     global colorKeyedObjectsDetectionConfigAndData
     # [colorKey, minArea, x, y, h, w, a, r]
-    fields = ['colorKey', 'minArea', 'center_x', 'center_y', 'height', 'width', 'area', 'ratio']
-    if saveInputImageToFolder is None:
-        pass
-    else:
+    fields = ['colorKey', 'minArea', 'centerX', 'centerY', 'height', 'width', 'area', 'ratio']
+    if saveInputImageToFolder is not None:
         of_path = os.path.join(saveInputImageToFolder, f'ba_{time.time()}.jpg')
         cv2.imwrite(of_path, image)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -160,33 +159,37 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
         maxArea = cad['max_area']
         coe = ColoredObjectExtractor(colorKey, min_area=minArea, max_area=maxArea)
         #coe.extract(hsv, image, True)
-        objs = coe.extract(hsv, image, False)
+        objs = coe.extract(hsv, numIterations=2)
         n = cad['count']
         nThisFrame = len(objs)
         if n < nThisFrame:
             cad['count'] = nThisFrame
         for i in range(nThisFrame):
-            ((x,y),(h,w), a, r) = objs[i]  
+            (cc, e, a, r) = objs[i]
+            ((x,y),(h,w),_) = e
             value.append({'colorKey':colorKey,
                           'minArea':minArea,
                           'minArea':maxArea,
-                          'center_x':x,
-                          'center_y':y,
+                          'centerX':x,
+                          'centerY':y,
                           'height':h,
                           'width':w,
                           'area':a,
-                          'ratio':r})
+                          'ratio':r}) #,
+                          #'contourColor':cc})
+            if True:
+                cv2.ellipse(image, e, cc, 5)
+                s = "{:.1f}, {:.3f}".format(a,r)
+                cv2.putText(image, s, (int(x) - 50, int(y)+40),
+                    cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.5, cc, 2, cv2.LINE_AA)
 
-    if saveAnalyzedImageToFolder is None:
-        pass
-    else:
+    if saveAnalyzedImageToFolder is not None:
         of_path = os.path.join(saveAnalyzedImageToFolder, f'aa_{time.time()}.jpg')
         cv2.imwrite(of_path, image)
         csv_path = os.path.join(saveAnalyzedImageToFolder, f'aa_{time.time()}.csv')
         with open(csv_path, 'w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames = fields)
             writer.writeheader()
-            #writer = csv.writer(file)
             writer.writerows(value)
 
     if show_image:
@@ -194,69 +197,6 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
         cv2.waitKey()
     
     return image
-
-def recordAndShowFrames(tello:Tello, fn:int):
-    global numObjectsDetectedForColor
-    f = flights[fn]
-    start_time = int(time.time())
-    output_folder = os.path.join("../output/processed", f["name"])
-    output_folder = os.path.join(f["name"], f'{start_time}')
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    frame_read = tello.get_frame_read()
-    time.sleep(3)
-    #h, w, _ = frame_read.frame.shape
-    #v = cv2.VideoWriter('video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 5, (w, h))
-    #v = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'XVID'), 5, (w, h))
-    #create two subplots
-    img = frame_read.frame
-    rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    #fig, ax = plt.subplots()
-    #f, (a0, a1) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [3, 1]})
-    plt.figure(figsize=(12, 9))
-    #a0.axis("off")
-    #a0.set(title="Waiting for streaming to start...")
-    #colors = list(numObjectsDetectedForColor.keys())
-    #vs = list(numObjectsDetectedForColor.values())
-    #create two image plots
-    plt.imshow(rgb_after)
-    #a1.bar(vs, colors, color ='maroon', width = 0.4)
-    #a1.set(xlabel="Max No. of colored objects", ylabel="Colors", title ="Objects detected per color")
-    plt.ion()
-    for fn in range(16):
-        start_time = time.time()
-        img = frame_read.frame
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        #rgb_before = rgb_img.copy()
-        #v.write(rgb_img)
-        img = colorAnalyzeImage(rgb_img, show_image=False, saveAnalyzedImageToFolder=output_folder)
-        rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        plt.imshow(rgb_after)
-    
-        #b = tello.get_battery()
-        #plt.title(f'Frame Number: {fn+1}, battery level: {b}')
-        plt.title(f'Frame Number: {fn+1}')
-        #print("Battery level: ", b)
-        delta_time = (1/5.0) - (time.time()-start_time)
-        if delta_time > 0:
-            plt.pause(delta_time)
-
-    tello.streamoff()
-    time.sleep(default_command_delay_time)
-
-    plt.ioff() # due to infinite loop, this gets never called.
-    plt.show()
-
-    plt.figure(figsize=(12, 9))
-    colors = list(numObjectsDetectedForColor.keys())
-    vs = list(numObjectsDetectedForColor.values())
-    plt.barh(colors, vs, color ='maroon', height = 0.4)
-    plt.xlabel("Max No. of colored objects")
-    plt.ylabel("Colors")
-    plt.title("Objects detected per color")
-    plt.show()
-
-
 
 def acquireImageFrames(imageBuffer:Queue, flightNumber:int):
     global flights
