@@ -12,12 +12,12 @@ class ColoredObjectExtractor:
           "hsvHigh2":[360//2, 100*255//100,  80*255//100], # 359, 89, 44
           "contourBgrColor": (0, 0, 255)
         },
-        "blue" : {"name": 'Blue',
+        "darker_blue" : {"name": 'Darker Blue',
           "hsvLow1": [194//2,  89*255//100,  34*255//100], #204, 99, 44
           "hsvHigh1":[214//2, 109*255//100,  78*255//100], #201, 99, 75
           "contourBgrColor": (113, 68, 1)
         },
-        "light_blue": {"name": 'Light Blue',
+        "lighter_blue": {"name": 'Lighter Blue',
           "hsvLow1": [198//2,  48*255//100,  52*255//100], #204, 55, 89
           "hsvHigh1":[218//2,  75*255//100,  92*255//100],
           "contourBgrColor": (172, 120, 60)
@@ -32,9 +32,9 @@ class ColoredObjectExtractor:
           "hsvHigh1":[ 36//2, 106*255//100,  86*255//100],  
           "contourBgrColor": (3, 123, 214)
         },
-        "green": {"name": 'Green',
-          "hsvLow1": [80//2,  40*255//100,  20*255//100], #88, 61, 24
-          "hsvHigh1":[110//2,  90*255//100,  50*255//100], #101, 53, 21
+        "darker_green": {"name": 'Darker Green',
+          "hsvLow1": [150//2,  40*255//100,  33*255//100], #88, 61, 24
+          "hsvHigh1":[170//2,  57*255//100,  53*255//100], #101, 53, 21  #162, 47, 43
           "contourBgrColor": (93, 154, 77)
         },
         "purple": {"name": 'Purple',
@@ -42,7 +42,7 @@ class ColoredObjectExtractor:
           "hsvHigh1":[280//2,  60*255//100,  80*255//100], #277, 42, 73; 278, 42, 77
           "contourBgrColor": (159, 80, 98)
         },
-        "light_green": {"name": 'Light Green',
+        "lighter_green": {"name": 'Lighter Green',
           "hsvLow1": [ 70//2,  30*255//100,  76*255//100], #110, 33, 80
           "hsvHigh1":[ 120//2,  80*255//100,  95*255//100], # to exclude 53, 42, 50
           "contourBgrColor": (48, 150, 131)
@@ -70,7 +70,7 @@ class ColoredObjectExtractor:
             self.maxConvexity = 1.10 #1.8:#15: #1.08:
             self.minConvexity = 0.92
         else:
-            self.maxConvexity = 1.25 #1.8:#15: #1.08:
+            self.maxConvexity = 1.8 #26 #1.8:#15: #1.08:
             self.minConvexity = 0.92
         self.sortedFilteredContours = []
         self.areaOfLargestContour = 0.0
@@ -111,7 +111,7 @@ class ColoredObjectExtractor:
                 else:
                     break
                 
-    def qualifyObjectsFromAreaSortedContours(self):
+    def qualifyObjectsFromAreaSortedContours(self, runIndex=0):
         """
         Check inertia and convexity of the ellipse fitted from the sorted and filtered contours.
         Note the assumption that there is a contour list sorted and filtered per area.
@@ -122,7 +122,10 @@ class ColoredObjectExtractor:
         for (c, a) in self.sortedFilteredContours:
             e = cv2.fitEllipse(c)
             ((x, y), (h, w), _) = e
-            inertiaRatio = h/w
+            if h < 1:
+                inertiaRatio = 100000.0
+            else:    
+                inertiaRatio = w/h
             if inertiaRatio < 4.0:  
                 ea = (3.1415926/4.0)*h*w
                 convexityRatio = ea/a
@@ -134,15 +137,15 @@ class ColoredObjectExtractor:
                     else:
                         r = a / areaOfLargestQualifiedObject
                     if r < 0.2:        
-                        print("Disqualified a potential", self.colorName, "object due to same type area ratio:", a, r)
+                        print("Disqualified a potential", self.colorName, "object due to same type area ratio:", a, r, runIndex)
                     else:
                         qualifiedObjects.append((self.contourBgrColor, e, a, convexityRatio))
                         numQualifiedObjects += 1
-                        print("[Great!!]Qualified a", self.colorName, "object successfully", a, r)
+                        print("[Great!!]Qualified a", self.colorName, "object successfully", a, r, convexityRatio, runIndex)
                 else:
-                    print("Disqualified a potential", self.colorName, "object due to covexity:", a, convexityRatio)
+                    print("Disqualified a potential", self.colorName, "object due to covexity:", a, convexityRatio, runIndex)
             else:
-                print("Disqualified a potential", self.colorName, "object at",  x, y, "due to iternia:", inertiaRatio)
+                print("Disqualified a potential", self.colorName, "object at",  x, y, "due to iternia:", inertiaRatio, runIndex)
         return numQualifiedObjects, qualifiedObjects
 
     def extract(self, hsv, numIterations = 1):
@@ -153,7 +156,7 @@ class ColoredObjectExtractor:
                 inRange += cv2.inRange(hsv, self.hsvLow2, self.hsvHigh2)
             contours, hierarchy = cv2.findContours(inRange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             self.filterContoursByArea(contours)
-            count, qualifiedObjectList = self.qualifyObjectsFromAreaSortedContours()
+            count, qualifiedObjectList = self.qualifyObjectsFromAreaSortedContours(runIndex=i)
             count = len(qualifiedObjectList)
             if count == 0:
                 break
@@ -166,8 +169,8 @@ class ColoredObjectExtractor:
 
     def autotuneParams(self, image, e):
         mask = np.zeros(image.shape[:2], dtype="uint8")
-        ((x, y), (la, sa), _) = e
-        cv2.circle(mask, (int(x), int(y)), int((sa+la)/4.0), 255, -1)
+        ((x, y), (sa, la), _) = e
+        cv2.circle(mask, (int(x), int(y)), int(sa/2.0), 255, -1)
         masked = cv2.bitwise_and(image, image, mask=mask)
 
         # Exclude 0 values for each channel independently
@@ -189,11 +192,14 @@ class ColoredObjectExtractor:
             #print(self.hsvLow1, self.hsvHigh1)
             
             if self.hsvLow2 is not None:
-                if percentile_5_values[0] >90:
-                  self.hsvLow2 = (percentile_5_values * .95).astype(int)
+                if percentile_5_values[0] > 90:
+                    self.hsvLow2 = (percentile_5_values * .95).astype(int)
                 else:
-                  self.hsvLow1 = (percentile_5_values * .95).astype(int)  
-                self.hsvHigh2 = (percentile_95_values * 1.05).astype(int)
+                    self.hsvLow1 = (percentile_5_values * .95).astype(int)
+                if percentile_95_values[0] < 90:
+                    self.hsvHigh1 = (percentile_95_values * 1.05).astype(int)
+                else:  
+                    self.hsvHigh2 = (percentile_95_values * 1.05).astype(int)
             else:
                 self.hsvLow1 = (percentile_5_values * .95).astype(int)
                 self.hsvHigh1 = (percentile_95_values * 1.05).astype(int)
