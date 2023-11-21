@@ -7,19 +7,19 @@ class ColoredObjectExtractor:
     COLORS = {
         "red": {"name": 'Red',
           "hsvLow1": [  0//2,  90*255//100,  40*255//100], # 351, 84, 65
-          "hsvHigh1":[ 20//2, 100*255//100,  80*255//100], # 348, 77, 83
+          "hsvHigh1":[ 14//2, 100*255//100,  80*255//100], # 348, 77, 83
           "hsvLow2": [340//2,  72*255//100,  40*255//100], # 349, 74, 83
           "hsvHigh2":[360//2, 100*255//100,  80*255//100], # 359, 89, 44
           "contourBgrColor": (0, 0, 255)
         },
         "darker_blue" : {"name": 'Darker Blue',
-          "hsvLow1": [194//2,  89*255//100,  34*255//100], #204, 99, 44
-          "hsvHigh1":[214//2, 109*255//100,  78*255//100], #201, 99, 75
+          "hsvLow1": [192//2,  54*255//100,  12*255//100], #204, 99, 44
+          "hsvHigh1":[228//2, 104*255//100,  78*255//100], #201, 99, 75
           "contourBgrColor": (113, 68, 1)
         },
         "lighter_blue": {"name": 'Lighter Blue',
-          "hsvLow1": [198//2,  48*255//100,  52*255//100], #204, 55, 89
-          "hsvHigh1":[218//2,  75*255//100,  92*255//100],
+          "hsvLow1": [160//2,  8*255//100,  30*255//100], #204, 55, 89
+          "hsvHigh1":[202//2,  30*255//100,  50*255//100], #192, 15, 40
           "contourBgrColor": (172, 120, 60)
         },
         "yellow": {"name": 'Yellow',
@@ -33,30 +33,30 @@ class ColoredObjectExtractor:
           "contourBgrColor": (3, 123, 214)
         },
         "darker_green": {"name": 'Darker Green',
-          "hsvLow1": [150//2,  40*255//100,  33*255//100], #88, 61, 24
-          "hsvHigh1":[170//2,  57*255//100,  53*255//100], #101, 53, 21  #162, 47, 43
-          "contourBgrColor": (93, 154, 77)
+          "hsvLow1": [70//2,  40*255//100,  10*255//100], #88, 61, 24, 100, 54, 16
+          "hsvHigh1":[150//2,  80*255//100,  38*255//100], #101, 53, 21  #162, 47, 43
+          "contourBgrColor": (39, 46, 31)
         },
         "purple": {"name": 'Purple',
-          "hsvLow1": [244//2,  40*255//100,  52*255//100], #266, 48, 71
-          "hsvHigh1":[280//2,  60*255//100,  80*255//100], #277, 42, 73; 278, 42, 77
+          "hsvLow1": [260//2,  24*255//100,  35*255//100], #266, 48, 71
+          "hsvHigh1":[312//2,  50*255//100,  76*255//100], #277, 42, 73; 278, 42, 77
           "contourBgrColor": (159, 80, 98)
         },
         "lighter_green": {"name": 'Lighter Green',
-          "hsvLow1": [ 70//2,  30*255//100,  76*255//100], #110, 33, 80
-          "hsvHigh1":[ 120//2,  80*255//100,  95*255//100], # to exclude 53, 42, 50
+          "hsvLow1": [ 68//2,  30*255//100,  50*255//100], #110, 33, 80
+          "hsvHigh1":[ 120//2,  80*255//100,  88*255//100], # to exclude 53, 42, 50
           "contourBgrColor": (48, 150, 131)
         },
         "tennis_ball": {"name": 'Tennis Ball',
-          "hsvLow1": [ 55//2,  16*255//100,  56*255//100],  #52, 43, 66
-          "hsvHigh1":[ 65//2,  36*255//100,  76*255//100],  #61, 26, 66
-          "hsvLow2": [ 50//2,  40*255//100,  60*255//100],  #61, 61, 68
-          "hsvHigh2":[ 65//2,  68*255//100,  80*255//100],  #59, 57, 72
+          "hsvLow1": [ 50//2,  30*255//100,  55*255//100],  #52, 43, 66
+          "hsvHigh1":[ 70//2,  50*255//100,  67*255//100],  #61, 26, 66
+          "hsvLow2": [ 56//2,  46*255//100,  20*255//100],  #61, 61, 68  == 80
+          "hsvHigh2":[ 78//2,  80*255//100,  100*255//100],  #59, 57, 72
           "contourBgrColor": (43, 166, 164)
         },
         "pink": {"name": 'Pink',
-          "hsvLow1": [ 295//2,  18*255//100,  76*255//100], #308, 27, 98; 313, 34, 93
-          "hsvHigh1":[ 330//2,  48*255//100,  108*255//100], #313, 33, 96; 321, 40, 86;  300, 19, 100
+          "hsvLow1": [ 310//2,  26*255//100,  62*255//100], #308, 27, 98; 313, 34, 93
+          "hsvHigh1":[ 342//2,  52*255//100,  90*255//100], #313, 33, 96; 321, 40, 86;  300, 19, 100
           "contourBgrColor": (229, 166, 247) }
     }
   
@@ -67,10 +67,10 @@ class ColoredObjectExtractor:
         self.maxArea = max_area
         # we might want to make the below an input parameter?
         if self.maxArea < 1000:
-            self.maxConvexity = 1.10 #1.8:#15: #1.08:
+            self.maxConvexity = 1.6 #32#4#10 #1.8:#15: #1.08:
             self.minConvexity = 0.92
         else:
-            self.maxConvexity = 1.8 #26 #1.8:#15: #1.08:
+            self.maxConvexity = 1.3 #1.2 #1.85 #5 #8 #26 #1.8:#15: #1.08:
             self.minConvexity = 0.92
         self.sortedFilteredContours = []
         self.areaOfLargestContour = 0.0
@@ -97,6 +97,7 @@ class ColoredObjectExtractor:
                 if a <= self.maxArea:
                     break
                 else:
+                    print("[COE]: Disqualified a potential", self.colorName, "object as it is considered too big:", a)
                     i += 1
             filteredCount = 0
             while i < count:
