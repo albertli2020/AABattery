@@ -24,13 +24,10 @@ colorKeyedObjectsDetectionConfigAndData = {
     'tennis_ball': {'count': 0, 'min_area':50, 'max_area':610},
     'pink': {'count': 0, 'min_area':balloon_min_area, 'max_area':balloon_max_area}  }
 
-def colorAnalyzeImage(image, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None, useMax=True, etb = False):
+def colorAnalyzeImage(image, saveAnalyzedImageToFolder=None, useMax=True, etb = False):
     global colorKeyedObjectsDetectionConfigAndData
     # [colorKey, minArea, x, y, h, w, a, r]
     fields = ['colorKey', 'minArea', 'centerX', 'centerY', 'height', 'width', 'area', 'ratio']
-    if saveInputImageToFolder is not None:
-        of_path = os.path.join(saveInputImageToFolder, f'ba_{time.time()}.jpg')
-        cv2.imwrite(of_path, image)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     #hsv[:, :, 0] = hsv[:, :, 0] * 1.05
     #hsv[:, :, 1] = hsv[:, :, 1] * .95
@@ -189,7 +186,7 @@ class AAImageFrameProcesser():
                     for frame in readFrames:
                         stitchFisheyeImage(lc, frame, angles, deltaAngle, ySize//4)
                         angles += deltaAngle
-                    img = colorAnalyzeImage(lc, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                    img = colorAnalyzeImage(lc, saveAnalyzedImageToFolder=processedOutputFolder)
                     self.totalNumberFramesProcessed += 1
                     self.processedImages.append(img)             
                     break
@@ -200,7 +197,7 @@ class AAImageFrameProcesser():
                     print(len(readFrames2))
                     (status, stitched) = stitcher.stitch(readFrames[0:4])
                     if status == 0:
-                        img1 = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                        img1 = colorAnalyzeImage(stitched, saveAnalyzedImageToFolder=processedOutputFolder)
                         self.totalNumberFramesProcessed += 1
                         self.processedImages.append(img1)
                         colors, counts = self.getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
@@ -209,7 +206,7 @@ class AAImageFrameProcesser():
                         print("Error stitching Front View!")
                     (status, stitched) = stitcher.stitch(readFrames2[0:4])
                     if status == 0:
-                        img2 = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                        img2 = colorAnalyzeImage(stitched, saveAnalyzedImageToFolder=processedOutputFolder)
                         totalNumberFramesProcessed += 1
                         self.processedImages.append(img2)
                         colors, counts = self.getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
@@ -247,38 +244,32 @@ class AAImageFrameProcesser():
                         if status == 0:
                             stitched = cv2.resize(stitched, dsize=(960*4, 720), interpolation=cv2.INTER_CUBIC)
                             if status == 0:
-                                img = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                                img = colorAnalyzeImage(stitched, saveAnalyzedImageToFolder=processedOutputFolder)
                                 self.totalNumberFramesProcessed += 1
                                 self.processedImages.append(img)                                 
                 else:
                     break
-            if flight_info['type'] == AAImageFrameProcesser.FT_HORIZONTAL_SCAN_IMAGE_ACQUIRER:
-                print(unprocessedOutputFolder, nRead)
-                #if nRead == 0:
+            
+            if unprocessedOutputFolder is not None:
                 of_path = os.path.join(unprocessedOutputFolder, f'ba_{nRead}.png')
                 cv2.imwrite(of_path, item)
+            if flight_info['type'] == AAImageFrameProcesser.FT_HORIZONTAL_SCAN_IMAGE_ACQUIRER:
                 if nRead < 12:
                     readFrames.append(item)
                 elif nRead > 11:
                     readFrames2.append(item)
                 nRead += 1
-                print("fn is 0, Processed ", nRead, " frame(s) so far...")    
+                print("Processed", nRead, " frame(s) so far...")    
             elif flight_info['type'] == AAImageFrameProcesser.FT_OTHER_PANORAMA_IMAGE_ACQUIRER:
-                if fn > 0:
-                    of_path = os.path.join(unprocessedOutputFolder, f'ba_{nRead}.png')
-                    cv2.imwrite(of_path, item)
                 if nRead == 0:
                     xSize = item.shape[1]
                     ySize = item.shape[0]
                     lcRadius = int(math.sqrt(xSize*xSize + ySize*ySize))
                 readFrames.append(item)
                 nRead += 1
-                print("fn is 0, Processed ", nRead, " frame(s) so far...")
+                print("Processed", nRead, " frame(s) so far...")
             elif self.totalNumberFramesProcessed < 100: #12:
-                if flight_info['requiresDrone']:
-                    of_path = os.path.join(unprocessedOutputFolder, f'ba_{nRead}.png')
-                    cv2.imwrite(of_path, item)
-                    nRead += 1
+                nRead += 1
                 topCropY = item.shape[0]//4
                 bottomCropFromY = item.shape[0] - item.shape[0]//6
                 bottomCropToY = item.shape[0]
@@ -288,13 +279,12 @@ class AAImageFrameProcesser():
                     excludeTB = True
                 else:
                     excludeTB = False 
-                img = colorAnalyzeImage(item, saveInputImageToFolder=None, saveAnalyzedImageToFolder=processedOutputFolder, useMax=False, etb = excludeTB)
+                img = colorAnalyzeImage(item, saveAnalyzedImageToFolder=processedOutputFolder, useMax=False, etb = excludeTB)
                 #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 self.totalNumberFramesProcessed += 1
                 self.processedImages.append(img)
                 colors, counts = self.getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
                 self.processedResults.append((colors, counts))
                 print("Processed ", self.totalNumberFramesProcessed, " frame(s) so far...")
-
         # all done
         print('Finished running image frame processer.')
