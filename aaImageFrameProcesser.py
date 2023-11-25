@@ -24,7 +24,7 @@ colorKeyedObjectsDetectionConfigAndData = {
     'tennis_ball': {'count': 0, 'min_area':50, 'max_area':610},
     'pink': {'count': 0, 'min_area':balloon_min_area, 'max_area':balloon_max_area}  }
 
-def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None, useMax=True, etb = False):
+def colorAnalyzeImage(image, saveInputImageToFolder=None, saveAnalyzedImageToFolder=None, useMax=True, etb = False):
     global colorKeyedObjectsDetectionConfigAndData
     # [colorKey, minArea, x, y, h, w, a, r]
     fields = ['colorKey', 'minArea', 'centerX', 'centerY', 'height', 'width', 'area', 'ratio']
@@ -83,10 +83,6 @@ def colorAnalyzeImage(image, show_image=True, saveInputImageToFolder=None, saveA
             writer.writeheader()
             writer.writerows(value)
 
-    if show_image:
-        cv2.imshow("color analysis result",image)
-        cv2.waitKey()
-    
     return image
 
 
@@ -193,7 +189,7 @@ class AAImageFrameProcesser():
                     for frame in readFrames:
                         stitchFisheyeImage(lc, frame, angles, deltaAngle, ySize//4)
                         angles += deltaAngle
-                    img = colorAnalyzeImage(lc, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                    img = colorAnalyzeImage(lc, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
                     self.totalNumberFramesProcessed += 1
                     self.processedImages.append(img)             
                     break
@@ -204,7 +200,7 @@ class AAImageFrameProcesser():
                     print(len(readFrames2))
                     (status, stitched) = stitcher.stitch(readFrames[0:4])
                     if status == 0:
-                        img1 = colorAnalyzeImage(stitched, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                        img1 = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
                         self.totalNumberFramesProcessed += 1
                         self.processedImages.append(img1)
                         colors, counts = self.getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
@@ -213,7 +209,7 @@ class AAImageFrameProcesser():
                         print("Error stitching Front View!")
                     (status, stitched) = stitcher.stitch(readFrames2[0:4])
                     if status == 0:
-                        img2 = colorAnalyzeImage(stitched, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                        img2 = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
                         totalNumberFramesProcessed += 1
                         self.processedImages.append(img2)
                         colors, counts = self.getColorsAndCounts(colorKeyedObjectsDetectionConfigAndData)
@@ -251,7 +247,7 @@ class AAImageFrameProcesser():
                         if status == 0:
                             stitched = cv2.resize(stitched, dsize=(960*4, 720), interpolation=cv2.INTER_CUBIC)
                             if status == 0:
-                                img = colorAnalyzeImage(stitched, show_image=False, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
+                                img = colorAnalyzeImage(stitched, saveInputImageToFolder=unprocessedOutputFolder, saveAnalyzedImageToFolder=processedOutputFolder)
                                 self.totalNumberFramesProcessed += 1
                                 self.processedImages.append(img)                                 
                 else:
@@ -292,7 +288,7 @@ class AAImageFrameProcesser():
                     excludeTB = True
                 else:
                     excludeTB = False 
-                img = colorAnalyzeImage(item, show_image=False, saveInputImageToFolder=None, saveAnalyzedImageToFolder=processedOutputFolder, useMax=False, etb = excludeTB)
+                img = colorAnalyzeImage(item, saveInputImageToFolder=None, saveAnalyzedImageToFolder=processedOutputFolder, useMax=False, etb = excludeTB)
                 #rgb_after = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 self.totalNumberFramesProcessed += 1
                 self.processedImages.append(img)
