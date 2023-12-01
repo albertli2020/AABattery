@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import bisect
 
 class ColoredObjectExtractor:
     MAX_NUM_OBJECTS_PER_COLOR = 6

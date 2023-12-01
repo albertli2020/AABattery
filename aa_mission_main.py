@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 from queue import Queue
-import csv
 
 from aaImageFrameAquirer import AAImageFrameAcquirer
 from aaImageFrameProcesser import AAImageFrameProcesser
