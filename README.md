@@ -12,9 +12,9 @@
 
 ## Usage
 
-### Simple example of running the mission mode for the competition's beginnger level scenarios
+### Simple examples of running the mission mode for the competition's beginner level scenarios
 
-#### Use the below command line if the host system's python installation is python 3.9.x
+#### Use the below command line if the host system's default python installation is python 3.9.x
 ```
 python aa_mission_main.py 9 1
 ```
